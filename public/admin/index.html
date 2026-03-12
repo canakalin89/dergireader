@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — DergiReader</title>
+  <link rel="stylesheet" href="/css/admin.css" />
+  <!-- Admin sayfası gömülemez, X-Frame ayarı yok -->
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="admin-header">
+    <h1>🗂️ Dergi Yönetimi</h1>
+    <div class="user-info">
+      <span>Admin Paneli</span>
+      <button class="btn btn-secondary" id="btnLogout" style="display:none">Çıkış Yap</button>
+    </div>
+  </header>
+
+  <!-- Login ekranı -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-icon">🔐</div>
+      <h2>Admin Girişi</h2>
+      <p>Dergi yönetim paneline erişmek için şifrenizi girin.</p>
+      <div class="login-error" id="loginError">Hatalı şifre. Tekrar deneyin.</div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="passwordInput">Şifre</label>
+          <input class="form-input" type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <button class="btn btn-primary" type="submit" id="loginBtn" style="width:100%">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Admin ana içerik -->
+  <div class="admin-content" id="adminContent">
+
+    <!-- Yeni Dergi Ekle -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>➕ Yeni Dergi Ekle</h2>
+      </div>
+      <div class="section-body">
+        <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+
+          <div class="form-group">
+            <label for="inTitle">Dergi Başlığı *</label>
+            <input class="form-input" type="text" id="inTitle" name="title" placeholder="Okul Dergisi" required maxlength="120" />
+          </div>
+
+          <div class="form-group">
+            <label for="inIssue">Sayı No *</label>
+            <input class="form-input" type="number" id="inIssue" name="issue" placeholder="1" min="1" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inYear">Yıl *</label>
+            <input class="form-input" type="number" id="inYear" name="year" placeholder="2025" min="2000" max="2099" required />
+          </div>
+
+          <div class="form-group">
+            <label for="inTerm">Dönem *</label>
+            <select class="form-select" id="inTerm" name="term" required>
+              <option value="">Seçin…</option>
+              <option value="Güz">Güz</option>
+              <option value="Bahar">Bahar</option>
+              <option value="Yaz">Yaz</option>
+              <option value="Yıllık">Yıllık</option>
+            </select>
+          </div>
+
+          <!-- PDF yükleme -->
+          <div class="form-group full-width">
+            <label>PDF Dosyası * (maks. 50 MB)</label>
+            <div class="drop-zone" id="pdfDrop">
+              <input type="file" id="inPdf" name="pdf" accept=".pdf,application/pdf" required />
+              <div class="drop-icon">📄</div>
+              <p><strong>Tıklayın veya sürükleyin</strong><br>PDF formatı</p>
+              <div class="file-chosen" id="pdfChosen"></div>
+            </div>
+          </div>
+
+          <!-- Kapak yükleme -->
+          <div class="form-group full-width">
+            <label>Kapak Görseli (isteğe bağlı, maks. 5 MB)</label>
+            <div class="drop-zone" id="coverDrop">
+              <input type="file" id="inCover" name="cover" accept="image/jpeg,image/png,image/webp" />
+              <div class="drop-icon">🖼️</div>
+              <p><strong>Tıklayın veya sürükleyin</strong><br>JPG, PNG veya WebP</p>
+              <div class="file-chosen" id="coverChosen"></div>
+            </div>
+          </div>
+
+          <!-- İlerleme -->
+          <div class="full-width">
+            <div class="progress-wrap" id="progressWrap">
+              <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+              <div class="progress-label" id="progressLabel">Yükleniyor…</div>
+            </div>
+          </div>
+
+          <div class="full-width" style="display:flex; justify-content:flex-end;">
+            <button class="btn btn-primary" type="submit" id="submitBtn">📤 Dergiyi Yükle</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mevcut Dergiler -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>📚 Mevcut Dergiler</h2>
+        <span id="listCount" style="font-size:0.82rem; color:var(--text-muted)">Yükleniyor…</span>
+      </div>
+      <div class="section-body">
+        <div class="magazine-list" id="magazineList">
+          <div class="empty-list">Yükleniyor…</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Silme onay modal -->
+  <div class="modal-backdrop" id="deleteModal">
+    <div class="modal">
+      <h3>🗑️ Dergiyi Sil</h3>
+      <p id="deleteModalMsg">Bu dergiyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+      <div class="modal-actions">
+        <button class="btn btn-outline" id="deleteCancelBtn">Vazgeç</button>
+        <button class="btn btn-danger" id="deleteConfirmBtn">Evet, Sil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

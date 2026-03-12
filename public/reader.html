@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dergi Okuyucu</title>
+  <link rel="stylesheet" href="/css/reader.css" />
+  <!-- PDF.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+
+  <!-- Araç çubuğu -->
+  <div class="reader-toolbar" id="toolbar">
+    <button class="btn-back" id="btnBack" title="Galeiye dön">← Geri</button>
+    <div class="toolbar-sep"></div>
+    <span class="toolbar-title" id="toolbarTitle">Yükleniyor…</span>
+    <div class="toolbar-sep"></div>
+
+    <!-- Sayfa gezinme -->
+    <button class="tb-btn" id="btnPrev" disabled title="Önceki sayfa (←)">‹</button>
+    <input class="page-input" id="pageInput" type="number" min="1" value="1" title="Sayfa numarası" />
+    <span class="page-info">/ <span id="totalPages">—</span></span>
+    <button class="tb-btn" id="btnNext" disabled title="Sonraki sayfa (→)">›</button>
+
+    <div class="toolbar-sep"></div>
+
+    <!-- Zoom -->
+    <button class="tb-btn" id="btnZoomOut" title="Küçült (-)">−</button>
+    <span class="zoom-value" id="zoomValue">100%</span>
+    <button class="tb-btn" id="btnZoomIn" title="Büyüt (+)">+</button>
+    <button class="tb-btn" id="btnZoomFit" title="Sayfaya sığdır">⊡</button>
+
+    <div class="toolbar-spacer"></div>
+
+    <!-- Eylemler -->
+    <button class="tb-btn" id="btnFullscreen" title="Tam ekran (F)">⛶</button>
+    <a class="tb-btn" id="btnDownload" href="#" download title="PDF İndir">⬇ İndir</a>
+  </div>
+
+  <!-- PDF Canvas -->
+  <div class="reader-viewport" id="viewport">
+    <div class="page-wrapper" id="pageWrapper">
+      <canvas id="pdfCanvas"></canvas>
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <span>PDF yükleniyor…</span>
+      </div>
+    </div>
+    <!-- Hata (JS ile gösterilir) -->
+    <div class="reader-error" id="readerError" style="display:none">
+      <div class="err-icon">⚠️</div>
+      <h3>PDF açılamadı</h3>
+      <p id="errorMsg">Bir hata oluştu.</p>
+      <button class="tb-btn" onclick="history.back()">← Geri dön</button>
+    </div>
+  </div>
+
+  <!-- Küçük resim şeridi -->
+  <div class="thumb-strip" id="thumbStrip"></div>
+
+  <script src="/js/reader.js"></script>
+</body>
+</html>

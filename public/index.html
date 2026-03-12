@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Okul Dergilerimiz</title>
+  <meta name="description" content="Okulumuzun dijital dergi arşivi" />
+  <link rel="stylesheet" href="/css/main.css" />
+  <!-- iframe embed için X-Frame-Options vercel.json'da ayarlanıyor -->
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header">
+    <h1>
+      <span class="icon">📚</span>
+      Okul Dergilerimiz
+    </h1>
+    <div class="header-actions">
+      <button class="btn-icon" id="themeToggle" title="Karanlık/Aydınlık mod" aria-label="Temayı değiştir">🌙</button>
+    </div>
+  </header>
+
+  <!-- İstatistik şeridi -->
+  <div class="stats-bar" id="statsBar">
+    <span>📖 <strong id="statCount">—</strong> dergi</span>
+    <span>📅 <strong id="statYears">—</strong></span>
+    <span>📄 Sayfa sayısı yükleniyor…</span>
+  </div>
+
+  <!-- Hata banner -->
+  <div class="error-banner" id="errorBanner">
+    Dergiler yüklenirken bir hata oluştu. Sayfayı yenileyin.
+  </div>
+
+  <!-- Filtre çubuğu -->
+  <div class="filter-bar">
+    <label for="filterYear">Yıl:</label>
+    <select class="filter-select" id="filterYear">
+      <option value="">Tümü</option>
+    </select>
+
+    <label for="filterTerm">Dönem:</label>
+    <select class="filter-select" id="filterTerm">
+      <option value="">Tümü</option>
+      <option value="Güz">Güz</option>
+      <option value="Bahar">Bahar</option>
+      <option value="Yaz">Yaz</option>
+      <option value="Yıllık">Yıllık</option>
+    </select>
+
+    <button class="filter-reset" id="filterReset">✕ Sıfırla</button>
+  </div>
+
+  <!-- Galeri -->
+  <main class="gallery-container" role="main">
+    <div class="gallery-grid" id="galleryGrid">
+      <!-- Yükleme iskeletleri (JS kaldırır) -->
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+      <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
+    </div>
+  </main>
+
+  <script src="/js/gallery.js"></script>
+</body>
+</html>
