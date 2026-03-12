@@ -1,0 +1,20 @@
+{
+  "name": "dergireader",
+  "version": "1.0.0",
+  "description": "Okul PDF dergi galerisi ve okuyucusu",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "hash-password": "node -e \"const b=require('bcryptjs');b.hash(process.argv[1],10).then(h=>console.log(h))\" "
+  },
+  "dependencies": {
+    "@vercel/blob": "^0.24.0",
+    "bcryptjs": "^2.4.3",
+    "formidable": "^3.5.1",
+    "jsonwebtoken": "^9.0.2",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

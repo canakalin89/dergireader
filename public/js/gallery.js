@@ -1,0 +1,140 @@
+/* ============================================
+   gallery.js — Dergi Galerisi
+   ============================================ */
+
+const API = '/api/magazines';
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+let allMagazines = [];
+
+// ---- Tema ----
+const html = document.documentElement;
+const themeToggle = document.getElementById('themeToggle');
+
+function applyTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  themeToggle.setAttribute('title', theme === 'dark' ? 'Aydınlık mod' : 'Karanlık mod');
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('dr_theme') || 'light';
+  applyTheme(saved);
+})();
+
+themeToggle.addEventListener('click', () => {
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('dr_theme', next);
+  applyTheme(next);
+});
+
+// ---- Veri yükleme ----
+async function loadMagazines() {
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error('API hatası');
+    allMagazines = await res.json();
+    renderStats(allMagazines);
+    populateYearFilter(allMagazines);
+    renderGallery(allMagazines);
+  } catch (err) {
+    document.getElementById('errorBanner').style.display = 'block';
+    document.getElementById('galleryGrid').innerHTML = '';
+  }
+}
+
+// ---- İstatistikler ----
+function renderStats(magazines) {
+  document.getElementById('statCount').textContent = magazines.length;
+  const years = [...new Set(magazines.map(m => m.year))].sort();
+  if (years.length > 1) {
+    document.getElementById('statYears').textContent = `${years[0]}–${years[years.length - 1]}`;
+  } else if (years.length === 1) {
+    document.getElementById('statYears').textContent = String(years[0]);
+  } else {
+    document.getElementById('statYears').textContent = '—';
+  }
+  const statsBar = document.getElementById('statsBar');
+  const spans = statsBar.querySelectorAll('span');
+  if (spans[2]) spans[2].textContent = `📖 ${magazines.length} yayın arşivde`;
+}
+
+// ---- Yıl filtresi doldur ----
+function populateYearFilter(magazines) {
+  const sel = document.getElementById('filterYear');
+  const years = [...new Set(magazines.map(m => m.year))].sort((a, b) => b - a);
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    sel.appendChild(opt);
+  });
+}
+
+// ---- Galeri render ----
+function renderGallery(magazines) {
+  const grid = document.getElementById('galleryGrid');
+  grid.innerHTML = '';
+
+  if (!magazines.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>Henüz dergi eklenmedi</h3>
+        <p>İlk dergi admin panelinden yüklenebilir.</p>
+      </div>`;
+    return;
+  }
+
+  magazines.forEach(mag => {
+    const isNew = Date.now() - new Date(mag.publishedAt).getTime() < THIRTY_DAYS;
+    const card = document.createElement('a');
+    card.className = 'magazine-card';
+    card.href = `/reader.html?id=${encodeURIComponent(mag.id)}`;
+    card.setAttribute('aria-label', `${mag.title} — Sayı ${mag.issue}`);
+
+    const coverHtml = mag.coverUrl
+      ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak görseli" loading="lazy" />${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
+      : `<div class="card-cover-placeholder"><span class="big-icon">📄</span><span>${escHtml(mag.title)}</span>${isNew ? '<span class="badge-new" style="position:static;margin-top:4px">YENİ</span>' : ''}</div>`;
+
+    card.innerHTML = `
+      ${coverHtml}
+      <div class="card-info">
+        <div class="card-title">${escHtml(mag.title)}</div>
+        <div class="card-meta">
+          <span>Sayı ${mag.issue}</span>
+          <span class="dot">${mag.year}</span>
+          ${mag.term ? `<span class="dot">${escHtml(mag.term)}</span>` : ''}
+        </div>
+      </div>`;
+
+    grid.appendChild(card);
+  });
+}
+
+// ---- Filtrele ----
+function applyFilters() {
+  const year = document.getElementById('filterYear').value;
+  const term = document.getElementById('filterTerm').value;
+  const filtered = allMagazines.filter(m =>
+    (!year || String(m.year) === year) &&
+    (!term || m.term === term)
+  );
+  renderGallery(filtered);
+}
+
+document.getElementById('filterYear').addEventListener('change', applyFilters);
+document.getElementById('filterTerm').addEventListener('change', applyFilters);
+document.getElementById('filterReset').addEventListener('click', () => {
+  document.getElementById('filterYear').value = '';
+  document.getElementById('filterTerm').value = '';
+  renderGallery(allMagazines);
+});
+
+// ---- Yardımcı ----
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Başlat
+loadMagazines();

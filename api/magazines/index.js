@@ -1,0 +1,89 @@
+const { v4: uuidv4 } = require('uuid');
+const { verifyAdmin } = require('../_lib/auth');
+const { getMagazines, saveMagazines, uploadFile } = require('../_lib/store');
+const formidable = require('formidable');
+const fs = require('fs');
+
+module.exports = async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET — herkese açık dergi listesi
+  if (req.method === 'GET') {
+    const magazines = await getMagazines();
+    magazines.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+    return res.status(200).json(magazines);
+  }
+
+  // POST — yeni dergi ekle (admin gerekli)
+  if (req.method === 'POST') {
+    if (!verifyAdmin(req)) {
+      return res.status(401).json({ error: 'Yetkisiz erişim' });
+    }
+
+    const form = formidable({ maxFileSize: 50 * 1024 * 1024 });
+    let fields, files;
+    try {
+      [fields, files] = await form.parse(req);
+    } catch (err) {
+      return res.status(400).json({ error: 'Form verisi okunamadı' });
+    }
+
+    const get = (v) => (Array.isArray(v) ? v[0] : v);
+    const title = get(fields.title);
+    const issue = parseInt(get(fields.issue));
+    const year = parseInt(get(fields.year));
+    const term = get(fields.term);
+
+    if (!title || !issue || !year || !term) {
+      return res.status(400).json({ error: 'Başlık, sayı, yıl ve dönem zorunludur' });
+    }
+
+    const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
+    const coverFile = Array.isArray(files.cover) ? files.cover[0] : files.cover;
+
+    if (!pdfFile) return res.status(400).json({ error: 'PDF dosyası zorunludur' });
+    if (!pdfFile.mimetype?.includes('pdf')) {
+      return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
+    }
+
+    const pdfBuffer = fs.readFileSync(pdfFile.filepath);
+    const pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
+
+    let coverUrl = null;
+    if (coverFile) {
+      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowed.includes(coverFile.mimetype)) {
+        return res.status(400).json({ error: 'Kapak için sadece JPG, PNG veya WebP kabul edilir' });
+      }
+      const ext = coverFile.originalFilename?.split('.').pop() || 'jpg';
+      const coverBuffer = fs.readFileSync(coverFile.filepath);
+      coverUrl = await uploadFile(coverBuffer, `covers/${uuidv4()}.${ext}`, coverFile.mimetype);
+    }
+
+    const magazine = {
+      id: uuidv4(),
+      title,
+      issue,
+      year,
+      term,
+      publishedAt: new Date().toISOString(),
+      pdfUrl,
+      coverUrl,
+      views: 0,
+    };
+
+    const magazines = await getMagazines();
+    magazines.push(magazine);
+    await saveMagazines(magazines);
+
+    return res.status(201).json(magazine);
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+};
+
+module.exports.config = { api: { bodyParser: false } };
