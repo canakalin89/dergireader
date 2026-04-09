@@ -77,7 +77,7 @@ async function upsertUser({ id, email, name, picture, provider }) {
   // Yeni kullanıcı
   const user = {
     id, email, name, picture, provider,
-    role: isOwner ? 'owner' : 'editor',
+    role: isOwner ? 'owner' : 'pending',
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString(),
   };

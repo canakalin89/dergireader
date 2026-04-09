@@ -35,7 +35,7 @@ function parseJWT(token) {
 
 function hasRole(minRole) {
   if (!currentUser) return false;
-  const levels = { owner: 3, admin: 2, editor: 1 };
+  const levels = { owner: 3, admin: 2, editor: 1, pending: 0 };
   return (levels[currentUser.role] || 0) >= (levels[minRole] || 0);
 }
 
@@ -90,12 +90,29 @@ function showAdminContent() {
   const badge = document.getElementById('userBadge');
   badge.style.display = 'flex';
   document.getElementById('userName').textContent = currentUser.name || currentUser.email || '';
-  const roleLabels = { owner: '👑 Owner', admin: '🔑 Admin', editor: '✏️ Editor' };
+  const roleLabels = { owner: '👑 Owner', admin: '🔑 Admin', editor: '✏️ Editor', pending: '⏳ Beklemede' };
   document.getElementById('roleChip').textContent = roleLabels[currentUser.role] || currentUser.role;
   if (currentUser.picture) {
     const avatar = document.getElementById('userAvatar');
     avatar.src = currentUser.picture;
     avatar.style.display = '';
+  }
+
+  // Pending kullanıcı: yükleme panelini gizle, bilgi notu göster
+  if (currentUser.role === 'pending') {
+    document.getElementById('uploadPanel').style.display = 'none';
+    const notice = document.createElement('section');
+    notice.className = 'panel';
+    notice.innerHTML = `
+      <div class="panel-body" style="text-align:center;padding:2.5rem 1.5rem;">
+        <div style="font-size:2.5rem;margin-bottom:.75rem;">⏳</div>
+        <h3 style="margin:0 0 .5rem">Hesabınız onay bekliyor</h3>
+        <p style="color:var(--text-muted);margin:0">
+          Yönetici hesabınızı onayladıktan sonra dergi ekleyebileceksiniz.<br/>
+          Dergileri görüntüleyebilir ve okuyabilirsiniz.
+        </p>
+      </div>`;
+    document.getElementById('adminContent').insertBefore(notice, document.getElementById('uploadPanel'));
   }
 
   // Kullanıcı panelini sadece owner'a göster
@@ -330,24 +347,37 @@ function renderUsers(users) {
     return;
   }
 
+  // Pending kullanıcılar üste, owner alta (sabit)
+  const sorted = [...users].sort((a, b) => {
+    const order = { pending: 0, editor: 1, admin: 2, owner: 3 };
+    return (order[a.role] ?? 1) - (order[b.role] ?? 1);
+  });
+
+  const pendingCount = sorted.filter(u => u.role === 'pending').length;
+  document.getElementById('usersCount').textContent =
+    `${users.length} kullanıcı${pendingCount ? ` · ${pendingCount} onay bekliyor` : ''}`;
+
   listEl.innerHTML = '';
-  users.forEach(user => {
+  sorted.forEach(user => {
     const isOwner = user.role === 'owner';
+    const isPending = user.role === 'pending';
     const item = document.createElement('div');
-    item.className = 'user-item';
+    item.className = 'user-item' + (isPending ? ' user-item--pending' : '');
     item.innerHTML = `
       <div class="user-thumb">
         ${user.picture ? `<img src="${esc(user.picture)}" alt="${esc(user.name)}" />` : '👤'}
       </div>
       <div class="user-details">
-        <h3>${esc(user.name || user.email)}</h3>
+        <h3>${esc(user.name || user.email)}${isPending ? ' <span class="role-chip role-chip--pending">⏳ Onay Bekliyor</span>' : ''}</h3>
         <div class="user-meta">${esc(user.email)} · Son giriş: ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : '—'}</div>
       </div>
       <div class="user-actions">
         ${isOwner ? `<span class="role-chip">👑 Owner</span>` : `
           <select class="role-select" data-userid="${esc(user.id)}" onchange="changeRole(this)">
-            <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
-            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+            <option value="pending" ${user.role === 'pending' ? 'selected' : ''}>⏳ Beklemede</option>
+            <option value="editor"  ${user.role === 'editor'  ? 'selected' : ''}>✏️ Editor</option>
+            <option value="admin"   ${user.role === 'admin'   ? 'selected' : ''}>🔑 Admin</option>
+            <option value="owner"   ${user.role === 'owner'   ? 'selected' : ''}>👑 Owner</option>
           </select>
           <button class="btn btn-outline btn-sm" data-userid="${esc(user.id)}" data-username="${esc(user.name || user.email)}" onclick="confirmDeleteUser(this)" title="Kullanıcıyı Sil">🗑</button>
         `}

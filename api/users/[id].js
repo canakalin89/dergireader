@@ -25,8 +25,8 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'PATCH') {
     const { role } = req.body || {};
-    if (!['admin', 'editor'].includes(role)) {
-      return res.status(400).json({ error: 'Geçersiz rol. admin veya editor olmalı' });
+    if (!['owner', 'admin', 'editor', 'pending'].includes(role)) {
+      return res.status(400).json({ error: 'Geçersiz rol.' });
     }
     users[userIdx].role = role;
     await saveUsers(users);

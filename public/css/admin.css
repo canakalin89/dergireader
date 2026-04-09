@@ -543,6 +543,19 @@ body {
   letter-spacing: .02em;
 }
 
+/* Kullanıcı listesi içindeki chip (koyu arka plan olmayacak) */
+.user-item .role-chip--pending {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+/* Onay bekleyen satır vurgusu */
+.user-item--pending {
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+}
+
 /* ---- User list ---- */
 .users-list { }
 .user-item {
