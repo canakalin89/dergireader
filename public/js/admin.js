@@ -197,7 +197,56 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   showToast('Çıkış yapıldı.', 'success');
 });
 
-// ---- Dergi listesi ----
+// ---- E-posta Auth (Giriş / Kayıt) ----
+let authMode = 'login'; // 'login' | 'register'
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const isReg = mode === 'register';
+  document.getElementById('fieldName').style.display   = isReg ? '' : 'none';
+  document.getElementById('inputName').required        = isReg;
+  document.getElementById('emailAuthBtn').textContent  = isReg ? 'Kayıt Ol' : 'Giriş Yap';
+  document.getElementById('tabLogin').classList.toggle('auth-tab--active',    !isReg);
+  document.getElementById('tabRegister').classList.toggle('auth-tab--active',  isReg);
+  document.getElementById('loginError').style.display = 'none';
+}
+
+document.getElementById('emailAuthForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email    = document.getElementById('inputEmail').value.trim();
+  const password = document.getElementById('inputPassword').value;
+  const name     = document.getElementById('inputName').value.trim();
+  const btn      = document.getElementById('emailAuthBtn');
+  const errEl    = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = authMode === 'register' ? 'Kaydediliyor…' : 'Giriş yapılıyor…';
+
+  try {
+    const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login-email';
+    const body = authMode === 'register'
+      ? JSON.stringify({ name, email, password })
+      : JSON.stringify({ email, password });
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'İşlem başarısız');
+    saveToken(data.token);
+    currentUser = parseJWT(data.token);
+    showAdminContent();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authMode === 'register' ? 'Kayıt Ol' : 'Giriş Yap';
+  }
+});
+
+
 async function loadMagazines() {
   const listEl = document.getElementById('magazineList');
   const countEl = document.getElementById('listCount');

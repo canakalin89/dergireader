@@ -32,8 +32,8 @@
   <div class="login-wrap" id="loginScreen">
     <div class="login-card">
       <div class="login-logo">D</div>
-      <h2>Giriş Yap</h2>
-      <p>Dergi arşivini yönetmek için giriş yapın.</p>
+      <h2>Dergi Arşivi</h2>
+      <p>Giriş yapın veya yeni hesap oluşturun.</p>
       <div class="login-error" id="loginError"></div>
 
       <!-- Google butonu -->
@@ -47,15 +47,41 @@
         Google ile Giriş Yap
       </a>
 
-      <div class="divider"><span>veya şifre ile</span></div>
+      <div class="divider"><span>veya e-posta ile</span></div>
 
-      <form id="loginForm">
-        <div class="field">
-          <label for="passwordInput">Şifre</label>
-          <input class="field-input" type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required />
+      <!-- Giriş / Kayıt Ol sekmeleri -->
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab auth-tab--active" id="tabLogin"  onclick="setAuthMode('login')">Giriş Yap</button>
+        <button type="button" class="auth-tab"                  id="tabRegister" onclick="setAuthMode('register')">Kayıt Ol</button>
+      </div>
+
+      <!-- E-posta + şifre formu -->
+      <form id="emailAuthForm">
+        <div class="field" id="fieldName" style="display:none">
+          <label for="inputName">Ad Soyad</label>
+          <input class="field-input" type="text" id="inputName" placeholder="Ad Soyad" autocomplete="name" />
         </div>
-        <button class="btn btn-primary btn-full" type="submit" id="loginBtn">Giriş Yap</button>
+        <div class="field">
+          <label for="inputEmail">E-posta</label>
+          <input class="field-input" type="email" id="inputEmail" placeholder="ornek@okul.edu.tr" autocomplete="email" required />
+        </div>
+        <div class="field">
+          <label for="inputPassword">Şifre</label>
+          <input class="field-input" type="password" id="inputPassword" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+        <button class="btn btn-primary btn-full" type="submit" id="emailAuthBtn">Giriş Yap</button>
       </form>
+
+      <!-- Yönetici şifresi (gizli) -->
+      <details class="admin-backdoor">
+        <summary>Yönetici şifresi ile giriş</summary>
+        <form id="loginForm">
+          <div class="field">
+            <input class="field-input" type="password" id="passwordInput" placeholder="Yönetici şifresi" autocomplete="off" />
+          </div>
+          <button class="btn btn-outline btn-full" type="submit" id="loginBtn">Yönetici Girişi</button>
+        </form>
+      </details>
 
       <a href="/" class="login-back-link">← Ana Sayfaya Dön</a>
     </div>

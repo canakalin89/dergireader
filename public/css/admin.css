@@ -125,6 +125,48 @@ body {
 }
 .login-back-link:hover { color: var(--accent); }
 
+/* ---- Auth Tabs (Giriş / Kayıt) ---- */
+.auth-tabs {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.auth-tab {
+  flex: 1;
+  padding: .5rem;
+  font-size: .82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.auth-tab + .auth-tab { border-left: 1.5px solid var(--border); }
+.auth-tab--active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ---- Admin backdoor ---- */
+.admin-backdoor {
+  margin-top: 1rem;
+  text-align: left;
+}
+.admin-backdoor summary {
+  font-size: .75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  text-align: center;
+  padding: .25rem;
+}
+.admin-backdoor summary:hover { color: var(--text); }
+.admin-backdoor form { margin-top: .75rem; display: flex; flex-direction: column; gap: .5rem; }
+
 .login-logo {
   width: 56px; height: 56px;
   background: var(--accent);
