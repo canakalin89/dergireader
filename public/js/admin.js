@@ -4,6 +4,7 @@
 
 const TOKEN_KEY = 'dr_admin_token';
 let authToken = localStorage.getItem(TOKEN_KEY);
+let currentUser = null;
 let pendingDeleteId = null;
 
 // ---- Auth ----
@@ -16,6 +17,7 @@ function saveToken(t) {
 
 function clearToken() {
   authToken = null;
+  currentUser = null;
   localStorage.removeItem(TOKEN_KEY);
 }
 
@@ -23,9 +25,48 @@ function authHeaders() {
   return { 'Authorization': `Bearer ${authToken}` };
 }
 
+function parseJWT(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
+
+function hasRole(minRole) {
+  if (!currentUser) return false;
+  const levels = { owner: 3, admin: 2, editor: 1 };
+  return (levels[currentUser.role] || 0) >= (levels[minRole] || 0);
+}
+
+// ---- URL'den token oku (Google callback) ----
+function checkUrlToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+  const authError = params.get('auth_error');
+
+  if (authError) {
+    history.replaceState({}, '', '/admin/');
+    showToast('Google ile giriş başarısız. Tekrar deneyin.', 'error');
+    return;
+  }
+
+  if (token) {
+    saveToken(token);
+    history.replaceState({}, '', '/admin/');
+  }
+}
+
 // ---- Başlangıç ----
 function init() {
+  checkUrlToken();
   if (isLoggedIn()) {
+    currentUser = parseJWT(authToken);
+    if (!currentUser || !currentUser.role) {
+      clearToken();
+      showLoginScreen();
+      return;
+    }
     showAdminContent();
   } else {
     showLoginScreen();
@@ -37,12 +78,32 @@ function showLoginScreen() {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('adminContent').classList.remove('visible');
   document.getElementById('btnLogout').style.display = 'none';
+  document.getElementById('userBadge').style.display = 'none';
 }
 
 function showAdminContent() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminContent').classList.add('visible');
   document.getElementById('btnLogout').style.display = '';
+
+  // Kullanıcı bilgisi göster
+  const badge = document.getElementById('userBadge');
+  badge.style.display = 'flex';
+  document.getElementById('userName').textContent = currentUser.name || currentUser.email || '';
+  const roleLabels = { owner: '👑 Owner', admin: '🔑 Admin', editor: '✏️ Editor' };
+  document.getElementById('roleChip').textContent = roleLabels[currentUser.role] || currentUser.role;
+  if (currentUser.picture) {
+    const avatar = document.getElementById('userAvatar');
+    avatar.src = currentUser.picture;
+    avatar.style.display = '';
+  }
+
+  // Kullanıcı panelini sadece owner'a göster
+  if (hasRole('owner')) {
+    document.getElementById('usersPanel').style.display = '';
+    loadUsers();
+  }
+
   loadMagazines();
 }
 
@@ -65,6 +126,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Giriş başarısız');
     saveToken(data.token);
+    currentUser = parseJWT(data.token);
     showAdminContent();
   } catch (err) {
     errEl.textContent = err.message;
@@ -105,6 +167,8 @@ function renderList(magazines) {
     return;
   }
 
+  const canDelete = hasRole('admin');
+
   listEl.innerHTML = '';
   magazines.forEach(mag => {
     const item = document.createElement('div');
@@ -121,7 +185,7 @@ function renderList(magazines) {
       </div>
       <div class="mag-actions">
         <a href="/reader.html?id=${esc(mag.id)}" target="_blank" class="btn btn-outline" title="Önizle">👁</a>
-        <button class="btn btn-outline" data-id="${esc(mag.id)}" data-title="${esc(mag.title)}" onclick="confirmDelete(this)" title="Sil">🗑</button>
+        ${canDelete ? `<button class="btn btn-outline" data-id="${esc(mag.id)}" data-title="${esc(mag.title)}" onclick="confirmDelete(this)" title="Sil">🗑</button>` : ''}
       </div>`;
     listEl.appendChild(item);
   });
@@ -151,7 +215,7 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       method: 'DELETE',
       headers: authHeaders(),
     });
-    if (res.status === 401) { handleUnauthorized(); return; }
+    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
     if (!res.ok) throw new Error('Silme başarısız');
     showToast('Dergi başarıyla silindi.', 'success');
     loadMagazines();
@@ -216,7 +280,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
       };
 
       xhr.onload = () => {
-        if (xhr.status === 401) { handleUnauthorized(); reject(new Error('Oturum süresi doldu')); return; }
+        if (xhr.status === 401 || xhr.status === 403) { handleUnauthorized(); reject(new Error('Yetkisiz')); return; }
         if (xhr.status === 201) resolve(JSON.parse(xhr.responseText));
         else {
           try { reject(new Error(JSON.parse(xhr.responseText).error || 'Yükleme başarısız')); }
@@ -239,6 +303,130 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     btn.textContent = '📤 Dergiyi Yükle';
     progressWrap.style.display = 'none';
     progressFill.style.width = '0%';
+  }
+});
+
+// ---- Kullanıcı yönetimi ----
+async function loadUsers() {
+  const listEl = document.getElementById('usersList');
+  const countEl = document.getElementById('usersCount');
+  listEl.innerHTML = '<div class="empty-list">Yükleniyor…</div>';
+
+  try {
+    const res = await fetch('/api/users', { headers: authHeaders() });
+    if (!res.ok) throw new Error('Yüklenemedi');
+    const users = await res.json();
+    countEl.textContent = `${users.length} kullanıcı`;
+    renderUsers(users);
+  } catch {
+    listEl.innerHTML = '<div class="empty-list">Kullanıcılar yüklenemedi.</div>';
+  }
+}
+
+function renderUsers(users) {
+  const listEl = document.getElementById('usersList');
+  if (!users.length) {
+    listEl.innerHTML = '<div class="empty-list">Henüz hiç kullanıcı yok.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  users.forEach(user => {
+    const isOwner = user.role === 'owner';
+    const item = document.createElement('div');
+    item.className = 'user-item';
+    item.innerHTML = `
+      <div class="user-thumb">
+        ${user.picture ? `<img src="${esc(user.picture)}" alt="${esc(user.name)}" />` : '👤'}
+      </div>
+      <div class="user-details">
+        <h3>${esc(user.name || user.email)}</h3>
+        <div class="user-meta">${esc(user.email)} · Son giriş: ${user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('tr-TR') : '—'}</div>
+      </div>
+      <div class="user-actions">
+        ${isOwner ? `<span class="role-chip">👑 Owner</span>` : `
+          <select class="role-select" data-userid="${esc(user.id)}" onchange="changeRole(this)">
+            <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Editor</option>
+            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+          </select>
+          <button class="btn btn-outline btn-sm" data-userid="${esc(user.id)}" data-username="${esc(user.name || user.email)}" onclick="confirmDeleteUser(this)" title="Kullanıcıyı Sil">🗑</button>
+        `}
+      </div>`;
+    listEl.appendChild(item);
+  });
+}
+
+async function changeRole(select) {
+  const userId = select.dataset.userid;
+  const role = select.value;
+  try {
+    const res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
+      method: 'PATCH',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.error || 'Rol güncellenemedi');
+    }
+    showToast(`Rol "${role}" olarak güncellendi.`, 'success');
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error');
+    loadUsers(); // listeyi geri yükle
+  }
+}
+
+let pendingDeleteUserId = null;
+function confirmDeleteUser(btn) {
+  pendingDeleteUserId = btn.dataset.userid;
+  // Silme modalını yeniden kullan
+  document.getElementById('deleteModalMsg').textContent =
+    `"${btn.dataset.username}" kullanıcısını kaldırmak istediğinize emin misiniz?`;
+  document.getElementById('deleteModal').dataset.mode = 'user';
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+  const modal = document.getElementById('deleteModal');
+  const mode = modal.dataset.mode;
+
+  if (mode === 'user') {
+    modal.dataset.mode = '';
+    modal.classList.remove('open');
+    if (!pendingDeleteUserId) return;
+    const id = pendingDeleteUserId;
+    pendingDeleteUserId = null;
+    try {
+      const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error('Silinemedi');
+      showToast('Kullanıcı kaldırıldı.', 'success');
+      loadUsers();
+    } catch (err) {
+      showToast('Hata: ' + err.message, 'error');
+    }
+    return;
+  }
+
+  // Dergi silme (mevcut akış)
+  if (!pendingDeleteId) return;
+  const id = pendingDeleteId;
+  pendingDeleteId = null;
+  modal.classList.remove('open');
+
+  try {
+    const res = await fetch(`/api/magazines/${id}`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+    });
+    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
+    if (!res.ok) throw new Error('Silme başarısız');
+    showToast('Dergi başarıyla silindi.', 'success');
+    loadMagazines();
+  } catch (err) {
+    showToast('Silme sırasında hata: ' + err.message, 'error');
   }
 });
 

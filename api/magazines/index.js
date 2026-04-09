@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const { verifyAdmin } = require('../_lib/auth');
+const { verifyAdmin, verifyRole } = require('../_lib/auth');
 const { getMagazines, saveMagazines, uploadFile } = require('../_lib/store');
 const formidable = require('formidable');
 const fs = require('fs');
@@ -18,9 +18,9 @@ module.exports = async function handler(req, res) {
     return res.status(200).json(magazines);
   }
 
-  // POST — yeni dergi ekle (admin gerekli)
+  // POST — yeni dergi ekle (editor veya üstü)
   if (req.method === 'POST') {
-    if (!verifyAdmin(req)) {
+    if (!verifyRole(req, 'editor')) {
       return res.status(401).json({ error: 'Yetkisiz erişim' });
     }
 

@@ -22,6 +22,12 @@ module.exports = async function handler(req, res) {
   const valid = await bcrypt.compare(password, hash);
   if (!valid) return res.status(401).json({ error: 'Hatalı şifre' });
 
-  const token = jwt.sign({ role: 'admin' }, secret, { expiresIn: '8h' });
+  // Şifre ile giriş = owner yetkisi (sadece sen biliyorsun)
+  const ownerEmail = process.env.OWNER_EMAIL || 'canakalin59@gmail.com';
+  const token = jwt.sign(
+    { id: 'password:owner', email: ownerEmail, name: 'Admin', role: 'owner' },
+    secret,
+    { expiresIn: '8h' }
+  );
   return res.status(200).json({ token });
 };

@@ -440,3 +440,119 @@ body {
   .file-grid  { grid-template-columns: 1fr; }
   .admin-body { padding: 1rem 1rem 3rem; }
 }
+
+/* ---- Google butonu ---- */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 100%;
+  padding: .7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color var(--tr), box-shadow var(--tr);
+  margin-bottom: .25rem;
+}
+.btn-google:hover {
+  border-color: #4285F4;
+  box-shadow: 0 0 0 3px rgba(66,133,244,.1);
+}
+
+/* ---- Divider ---- */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 1rem 0;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ---- User badge (header) ---- */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+}
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.user-name {
+  font-size: .83rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.85);
+}
+.role-chip {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: .15rem .45rem;
+  border-radius: 20px;
+  background: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.75);
+  letter-spacing: .02em;
+}
+
+/* ---- User list ---- */
+.users-list { }
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.user-item:last-child { border-bottom: none; }
+
+.user-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.user-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.user-details { flex: 1; min-width: 0; }
+.user-details h3 { font-size: .9rem; font-weight: 600; margin-bottom: .2rem; }
+.user-meta { font-size: .75rem; color: var(--text-muted); }
+
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+.role-select {
+  padding: .35rem .6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  font-size: .82rem;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-sm { padding: .3rem .55rem; font-size: .78rem; }

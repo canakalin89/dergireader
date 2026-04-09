@@ -1,4 +1,4 @@
-const { verifyAdmin } = require('../_lib/auth');
+const { verifyAdmin, verifyRole } = require('../_lib/auth');
 const { getMagazines, saveMagazines, deleteFile } = require('../_lib/store');
 
 module.exports = async function handler(req, res) {
@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (!verifyAdmin(req)) {
+  if (!verifyAdmin(req)) {  // admin veya owner gerekli (editor silemez)
     return res.status(401).json({ error: 'Yetkisiz erişim' });
   }
 
