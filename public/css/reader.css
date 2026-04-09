@@ -1,256 +1,165 @@
 /* ============================================
-   DergiReader — PDF Okuyucu Stilleri
+   reader.css — StPageFlip Dergi Okuyucu
    ============================================ */
-
-:root {
-  --primary: #1a3a6b;
-  --primary-light: #2451a0;
-  --accent: #c9a227;
-  --bg: #1a1a2e;
-  --bg-toolbar: #0f1117;
-  --bg-thumb: #1e2536;
-  --text: #e8eaf0;
-  --text-muted: #9ca3af;
-  --border: #2d3348;
-  --radius: 10px;
-  --transition: 0.2s ease;
-}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  height: 100vh;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  font-family: "Segoe UI", system-ui, sans-serif;
   display: flex;
   flex-direction: column;
+  height: 100dvh;
   overflow: hidden;
-  user-select: none;
 }
 
-/* ---- Araç çubuğu ---- */
+/* ---- Toolbar ---- */
 .reader-toolbar {
-  background: var(--bg-toolbar);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  min-height: 52px;
-}
-
-.toolbar-title {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-right: 0.5rem;
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.toolbar-sep { width: 1px; height: 28px; background: var(--border); margin: 0 0.25rem; }
-
-.tb-btn {
-  background: rgba(255,255,255,0.08);
-  border: none;
-  color: var(--text);
-  padding: 0.35rem 0.65rem;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  display: flex; align-items: center; gap: 0.3rem;
-  transition: background var(--transition);
-  white-space: nowrap;
-}
-.tb-btn:hover { background: rgba(255,255,255,0.18); }
-.tb-btn:disabled { opacity: 0.35; cursor: default; }
-
-.page-info {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  padding: 0 0.5rem;
-  min-width: 80px;
-  text-align: center;
-}
-
-.page-input {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid var(--border);
-  color: var(--text);
-  width: 44px;
-  text-align: center;
-  padding: 0.25rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
-.page-input:focus { outline: none; border-color: var(--accent); }
-
-.zoom-value {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  min-width: 42px;
-  text-align: center;
-}
-
-.toolbar-spacer { flex: 1; }
-
-/* ---- Canvas alanı ---- */
-.reader-viewport {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 1.5rem;
-  background: var(--bg);
-  position: relative;
-}
-
-.page-wrapper {
-  position: relative;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-  border-radius: 4px;
-  overflow: hidden;
-  /* Sayfa çevirme animasyonu */
-  perspective: 1200px;
-}
-
-#pdfCanvas {
-  display: block;
-  max-width: 100%;
-}
-
-/* Flip animasyonu */
-.page-flip-enter {
-  animation: flipIn 0.28s ease forwards;
-}
-.page-flip-exit {
-  animation: flipOut 0.14s ease forwards;
-}
-
-@keyframes flipOut {
-  from { transform: rotateY(0deg); opacity: 1; }
-  to   { transform: rotateY(-90deg); opacity: 0; }
-}
-@keyframes flipIn {
-  from { transform: rotateY(90deg); opacity: 0; }
-  to   { transform: rotateY(0deg); opacity: 1; }
-}
-
-/* Yükleniyor göstergesi */
-.loading-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(26,26,46,0.85);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-.spinner {
-  width: 36px; height: 36px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ---- Küçük resim şeridi ---- */
-.thumb-strip {
-  height: 100px;
-  background: var(--bg-thumb);
-  border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  padding: 0 12px;
+  height: 48px;
+  background: #0f0f1a;
+  border-bottom: 1px solid #2a2a4a;
   flex-shrink: 0;
-  scroll-behavior: smooth;
+  z-index: 100;
 }
-.thumb-strip::-webkit-scrollbar { height: 4px; }
-.thumb-strip::-webkit-scrollbar-track { background: transparent; }
-.thumb-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-.thumb-item {
-  flex-shrink: 0;
-  width: 56px;
-  height: 80px;
-  border: 2px solid transparent;
-  border-radius: 4px;
+.toolbar-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c0c0d8;
+  white-space: nowrap;
   overflow: hidden;
-  cursor: pointer;
-  position: relative;
-  transition: border-color var(--transition), transform var(--transition);
-}
-.thumb-item:hover { transform: scale(1.05); }
-.thumb-item.active { border-color: var(--accent); }
-.thumb-item canvas { width: 100%; height: 100%; object-fit: contain; }
-.thumb-num {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  background: rgba(0,0,0,0.6);
-  font-size: 0.6rem;
-  color: #fff;
-  text-align: center;
-  padding: 1px 0;
+  text-overflow: ellipsis;
+  max-width: 240px;
 }
 
-/* ---- Tam ekran ---- */
-:fullscreen .reader-toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; }
-:fullscreen .reader-viewport { padding-top: 56px; }
-:fullscreen .thumb-strip { position: fixed; bottom: 0; left: 0; right: 0; z-index: 200; }
+.toolbar-sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 4px; }
+.toolbar-spacer { flex: 1; }
 
-/* ---- Geri düğmesi ---- */
 .btn-back {
   background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 0.85rem;
+  border: 1px solid #3a3a5a;
+  color: #a0a0c0;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-back:hover { background: #2a2a4a; color: #fff; }
+
+.tb-btn {
+  background: none;
+  border: 1px solid #3a3a5a;
+  color: #a0a0c0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 7px;
-  transition: color var(--transition), background var(--transition);
+  justify-content: center;
+  transition: all .15s;
+  text-decoration: none;
+  flex-shrink: 0;
 }
-.btn-back:hover { color: var(--text); background: rgba(255,255,255,0.06); }
+.tb-btn:hover { background: #2a2a4a; color: #fff; border-color: #5a5a8a; }
+.tb-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
 
-/* ---- Hata sayfası ---- */
-.reader-error {
+.page-info {
+  font-size: 12px;
+  color: #8080a0;
+  white-space: nowrap;
+  min-width: 64px;
+  text-align: center;
+}
+
+/* ---- Loading overlay ---- */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: #1a1a2e;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  gap: 1rem;
-  color: var(--text-muted);
+  gap: 16px;
+  z-index: 200;
+  color: #8080b0;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #2a2a4a;
+  border-top-color: #6060c0;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Error ---- */
+.reader-error {
+  position: fixed;
+  inset: 0;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 200;
   text-align: center;
-  padding: 2rem;
+  padding: 24px;
 }
-.reader-error .err-icon { font-size: 3.5rem; }
+.err-icon { font-size: 48px; }
+.reader-error h3 { font-size: 20px; color: #e0e0f0; }
+.reader-error p { color: #8080a0; font-size: 14px; max-width: 360px; }
 
-/* ---- Responsive ---- */
+/* ---- Flipbook scene ---- */
+.flipbook-scene {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 16px;
+  background: radial-gradient(ellipse at center, #252540 0%, #1a1a2e 100%);
+}
+
+/* ---- StPageFlip page elements ---- */
+.flip-page {
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-page canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.flip-page-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f0f0;
+  color: #aaa;
+  font-size: 13px;
+}
+
 @media (max-width: 600px) {
-  .reader-toolbar { gap: 0.3rem; padding: 0.4rem 0.6rem; }
-  .toolbar-title { max-width: 120px; font-size: 0.8rem; }
-  .reader-viewport { padding: 0.5rem; }
-  .thumb-strip { height: 80px; }
-  .thumb-item { width: 44px; height: 62px; }
-  .zoom-value, .toolbar-sep { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .flipbook-scene { padding: 8px; }
+  .toolbar-title { max-width: 120px; }
 }
