@@ -359,11 +359,38 @@ body {
   .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
   .gallery-container { padding: 1.25rem 1rem 2rem; }
   .stats-bar { display: none; }
-  .admin-link { display: none; }
+
+  /* Yönetim linki: ikon olarak küçük tut, metin gizle */
+  .admin-link { font-size: 0; padding: .35rem .5rem; }
+  .admin-link::after { content: '⚙'; font-size: .85rem; }
+
+  /* Header daha sıkışık */
+  .header-inner { padding: 0 .85rem; gap: .5rem; }
+  .brand-sub { display: none; }
+
+  /* Filter row yatay kaydırma */
+  .filter-inner {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: .65rem 1rem;
+  }
+  .filter-inner::-webkit-scrollbar { display: none; }
+  .filter-label { flex-shrink: 0; }
+  .filter-select { flex-shrink: 0; }
+
+  /* Dokunma hedefi */
+  .filter-reset { width: 38px; height: 38px; flex-shrink: 0; }
+
+  /* Kart hover efekti mobile'da disabled */
+  .magazine-card:hover { transform: none; box-shadow: var(--shadow-sm); }
 }
+
 @media (max-width: 360px) {
   .gallery-grid { grid-template-columns: 1fr; }
 }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

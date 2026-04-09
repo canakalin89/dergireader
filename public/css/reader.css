@@ -161,5 +161,26 @@ body {
 
 @media (max-width: 600px) {
   .flipbook-scene { padding: 8px; }
-  .toolbar-title { max-width: 120px; }
+
+  /* Daha geniş başlık */
+  .toolbar-title { max-width: 140px; font-size: 12px; }
+
+  /* Dokunma hedefleri: min 44px */
+  .tb-btn { width: 44px; height: 44px; font-size: 18px; }
+  .btn-back { padding: 8px 12px; font-size: 13px; min-height: 44px; }
+
+  /* Tam ekran ve indirme küçük ekranda gizle */
+  #btnFullscreen { display: none; }
+
+  /* Sayfa bilgisi daha kompakt */
+  .page-info { font-size: 11px; min-width: 50px; }
+
+  /* Toolbar sıkışmasın: gap daralt */
+  .reader-toolbar { gap: 3px; padding: 0 8px; }
+  .toolbar-sep { margin: 0 2px; }
+}
+
+@media (max-width: 400px) {
+  .toolbar-title { max-width: 90px; }
+  #btnDownload { display: none; }
 }

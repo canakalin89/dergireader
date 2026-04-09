@@ -100,8 +100,9 @@ function buildPages(w, h) {
 
 // ---- StPageFlip başlat ----
 function initFlipBook(pageW, pageH) {
-  const sceneW   = scene.clientWidth  - 32;
-  const sceneH   = scene.clientHeight - 32;
+  const padding  = isPortrait ? 16 : 32;
+  const sceneW   = scene.clientWidth  - padding;
+  const sceneH   = scene.clientHeight - padding;
   const scaleF   = Math.min(sceneW / (isPortrait ? pageW : pageW * 2), sceneH / pageH, 1);
   const dispW    = Math.floor(pageW * scaleF);
   const dispH    = Math.floor(pageH * scaleF);
@@ -116,11 +117,12 @@ function initFlipBook(pageW, pageH) {
     showCover:       true,
     usePortrait:     isPortrait,
     startPage:       startPg,
-    drawShadow:      true,
-    flippingTime:    700,
+    drawShadow:      !isPortrait,
+    flippingTime:    isPortrait ? 400 : 700,
     useMouseEvents:  true,
     mobileScrollSupport: false,
     autoSize:        false,
+    swipeDistance:   30,
   });
 
   pageFlip.loadFromHTML(document.querySelectorAll('.flip-page'));
