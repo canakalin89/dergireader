@@ -116,6 +116,15 @@ body {
   text-align: center;
 }
 
+.login-back-link {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: .82rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.login-back-link:hover { color: var(--accent); }
+
 .login-logo {
   width: 56px; height: 56px;
   background: var(--accent);
@@ -471,7 +480,8 @@ body {
 
 @media (max-width: 400px) {
   /* Çok küçük: header sadelik */
-  .hdr-link { display: none; }
+  .hdr-link { font-size: 0; padding: .3rem .55rem; }
+  .hdr-link::before { content: '🏠'; font-size: 1rem; }
   .brand-name { font-size: .75rem; }
 }
 
