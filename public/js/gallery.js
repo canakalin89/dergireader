@@ -95,7 +95,7 @@ function renderGallery(magazines) {
 
     const coverHtml = mag.coverUrl
       ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak görseli" loading="lazy" />${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
-      : `<div class="card-cover-placeholder"><span class="big-icon">📄</span><span>${escHtml(mag.title)}</span>${isNew ? '<span class="badge-new" style="position:static;margin-top:4px">YENİ</span>' : ''}</div>`;
+      : `<div class="card-cover"><canvas class="pdf-cover-canvas" data-pdf="${escHtml(mag.pdfUrl || '')}"></canvas>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`;
 
     card.innerHTML = `
       ${coverHtml}
@@ -110,9 +110,48 @@ function renderGallery(magazines) {
 
     grid.appendChild(card);
   });
+
+  initPdfCovers();
+}
+
+// ---- PDF Otomatik Kapak ----
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+function initPdfCovers() {
+  const canvases = document.querySelectorAll('canvas.pdf-cover-canvas:not([data-rendered])');
+  if (!canvases.length || typeof pdfjsLib === 'undefined') return;
+  if (!pdfjsLib.GlobalWorkerOptions.workerSrc)
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const canvas = entry.target;
+      observer.unobserve(canvas);
+      renderPdfFirstPage(canvas, canvas.dataset.pdf);
+    });
+  }, { rootMargin: '400px' });
+  canvases.forEach(c => observer.observe(c));
 }
 
-// ---- Filtrele ----
+async function renderPdfFirstPage(canvas, url) {
+  if (!url || canvas.dataset.rendered) return;
+  canvas.dataset.rendered = '1';
+  try {
+    const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
+    const page = await pdf.getPage(1);
+    const vp0 = page.getViewport({ scale: 1 });
+    const scale = 300 / vp0.width;
+    const vp = page.getViewport({ scale });
+    canvas.width = vp.width;
+    canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  } catch {
+    canvas.style.display = 'none';
+  }
+}
+
+
 function applyFilters() {
   const year = document.getElementById('filterYear').value;
   const term = document.getElementById('filterTerm').value;
