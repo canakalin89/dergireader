@@ -44,14 +44,29 @@ module.exports = async function handler(req, res) {
 
     const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
     const coverFile = Array.isArray(files.cover) ? files.cover[0] : files.cover;
+    const pdfUrlField = get(fields.pdfUrl);
 
-    if (!pdfFile) return res.status(400).json({ error: 'PDF dosyası zorunludur' });
-    if (!pdfFile.mimetype?.includes('pdf')) {
-      return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
+    // PDF kaynağı: URL veya dosya
+    let pdfUrl = null;
+    if (pdfUrlField && pdfUrlField.trim()) {
+      // URL modu — doğrulama
+      try { new URL(pdfUrlField.trim()); } catch {
+        return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin' });
+      }
+      // Google Drive paylaşım linkini direkt indirme linkine çevir
+      const gDriveMatch = pdfUrlField.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      pdfUrl = gDriveMatch
+        ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
+        : pdfUrlField.trim();
+    } else if (pdfFile) {
+      if (!pdfFile.mimetype?.includes('pdf')) {
+        return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
+      }
+      const pdfBuffer = fs.readFileSync(pdfFile.filepath);
+      pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
+    } else {
+      return res.status(400).json({ error: 'PDF dosyası veya URL zorunludur' });
     }
-
-    const pdfBuffer = fs.readFileSync(pdfFile.filepath);
-    const pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
 
     let coverUrl = null;
     if (coverFile) {

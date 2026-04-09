@@ -260,6 +260,47 @@ body {
   margin-bottom: 1rem;
 }
 
+/* ---- Source Toggle ---- */
+.source-toggle {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1rem;
+}
+.src-btn {
+  padding: .4rem .9rem;
+  font-size: .78rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--tr);
+}
+.src-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: #fdf5ee;
+}
+
+/* ---- URL Zone ---- */
+.url-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
+}
+.url-zone .field-input { width: 100%; text-align: left; margin-top: .25rem; }
+.url-hint {
+  font-size: .7rem;
+  color: var(--text-muted);
+  margin-top: .25rem;
+  text-align: center;
+}
+
 .drop-zone {
   position: relative;
   border: 2px dashed var(--border);

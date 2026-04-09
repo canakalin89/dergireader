@@ -241,6 +241,20 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
   }
 });
 
+// ---- PDF Kaynak Toggler ----
+let pdfSource = 'upload'; // 'upload' | 'url'
+
+function setPdfSource(mode) {
+  pdfSource = mode;
+  document.getElementById('pdfDrop').style.display     = mode === 'upload' ? '' : 'none';
+  document.getElementById('pdfUrlZone').style.display  = mode === 'url'    ? '' : 'none';
+  document.getElementById('srcUploadBtn').classList.toggle('src-btn--active', mode === 'upload');
+  document.getElementById('srcUrlBtn').classList.toggle('src-btn--active',   mode === 'url');
+  // Required zorunluluğu ayarla
+  document.getElementById('inPdf').required    = mode === 'upload';
+  document.getElementById('inPdfUrl').required = mode === 'url';
+}
+
 // ---- Yükleme formu ----
 setupDropZone('pdfDrop', 'inPdf', 'pdfChosen');
 setupDropZone('coverDrop', 'inCover', 'coverChosen');
@@ -281,6 +295,19 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   progressWrap.style.display = 'block';
 
   const formData = new FormData(e.target);
+
+  // URL modunda: dosya alanını temizle, pdfUrl'u ekle
+  if (pdfSource === 'url') {
+    formData.delete('pdf');
+    const urlVal = document.getElementById('inPdfUrl').value.trim();
+    if (!urlVal) {
+      showToast('Lütfen bir PDF URL\'si girin.', 'error');
+      btn.disabled = false; btn.textContent = '📤 Dergiyi Yükle';
+      progressWrap.style.display = 'none';
+      return;
+    }
+    formData.set('pdfUrl', urlVal);
+  }
 
   try {
     await new Promise((resolve, reject) => {
