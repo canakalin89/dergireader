@@ -104,9 +104,13 @@ function renderGallery(magazines) {
     card.href = `/reader.html?id=${encodeURIComponent(mag.id)}`;
     card.setAttribute('aria-label', `${mag.title} — Sayı ${mag.issue}`);
 
-    const coverHtml = mag.coverUrl
-      ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="card-cover-placeholder" style="display:none">📄</div>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
-      : `<div class="card-cover"><div class="card-cover-placeholder">📄</div>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`;
+    // coverUrl yoksa pdfUrl'den Drive thumbnail üret
+    var coverSrc = mag.coverUrl || driveThumbnail(mag.pdfUrl);
+    var badgeHtml = isNew ? '<span class="badge-new">YENİ</span>' : '';
+
+    const coverHtml = coverSrc
+      ? `<div class="card-cover"><img src="${escHtml(coverSrc)}" alt="${escHtml(mag.title)} kapak" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="card-cover-placeholder" style="display:none">📄</div>${badgeHtml}</div>`
+      : `<div class="card-cover"><div class="card-cover-placeholder">📄</div>${badgeHtml}</div>`;
 
     const metaParts = [];
     if (mag.issue) metaParts.push(`<span>Sayı ${mag.issue}</span>`);
@@ -186,6 +190,12 @@ document.getElementById('filterReset').addEventListener('click', () => {
 // ---- Yardımcı ----
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function driveThumbnail(url) {
+  if (!url) return null;
+  var m = url.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
+  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400' : null;
 }
 
 // Başlat

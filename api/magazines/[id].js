@@ -23,6 +23,11 @@ module.exports = async function handler(req, res) {
       const magazines = await getMagazines();
       const mag = magazines.find(m => m.id === id);
       if (!mag) return sendError(res, 'ERR_MAG_NOT_FOUND');
+      // coverUrl boşsa Drive thumbnail ekle
+      if (!mag.coverUrl && mag.pdfUrl) {
+        const fid = extractDriveId(mag.pdfUrl);
+        if (fid) mag.coverUrl = `https://drive.google.com/thumbnail?id=${fid}&sz=w400`;
+      }
       return res.status(200).json(mag);
     } catch (err) {
       return sendError(res, 'ERR_STORE_READ_FAILED', err.message);

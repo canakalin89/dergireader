@@ -31,6 +31,13 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const magazines = await getMagazines();
+      // coverUrl boş kalmış dergilere Drive thumbnail ekle
+      magazines.forEach(m => {
+        if (!m.coverUrl && m.pdfUrl) {
+          const fid = extractDriveId(m.pdfUrl);
+          if (fid) m.coverUrl = `https://drive.google.com/thumbnail?id=${fid}&sz=w400`;
+        }
+      });
       magazines.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
       return res.status(200).json(magazines);
     } catch (err) {
