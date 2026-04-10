@@ -15,6 +15,10 @@ body {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  /* Safe-area for notched devices */
+  padding-top: env(safe-area-inset-top, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
 }
 
 /* ── Toolbar ── */
@@ -22,12 +26,20 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 12px;
+  padding: 0 max(12px, env(safe-area-inset-left, 12px));
+  padding-right: max(12px, env(safe-area-inset-right, 12px));
   height: 48px;
   background: #0a0a12;
   border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
   z-index: 100;
+  transition: transform .3s ease, opacity .3s ease;
+}
+
+.reader-toolbar.toolbar-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .toolbar-title {
@@ -38,10 +50,11 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
+  min-width: 0;
 }
 
-.toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,.08); margin: 0 4px; }
-.toolbar-spacer { flex: 1; }
+.toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,.08); margin: 0 4px; flex-shrink: 0; }
+.toolbar-spacer { flex: 1; min-width: 4px; }
 
 .btn-back {
   background: none;
@@ -53,14 +66,20 @@ body {
   cursor: pointer;
   transition: all .15s;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 .btn-back:hover { background: rgba(255,255,255,.08); color: #fff; }
+.btn-back:active { background: rgba(255,255,255,.12); }
 
 .loader-back {
   margin-top: 18px;
   opacity: .7;
   font-size: 13px;
   transition: opacity .2s;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .loader-back:hover { opacity: 1; }
 
@@ -68,8 +87,8 @@ body {
   background: none;
   border: 1px solid rgba(255,255,255,.12);
   color: #a0a0c0;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
@@ -79,15 +98,17 @@ body {
   transition: all .15s;
   text-decoration: none;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 .tb-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.tb-btn:active { background: rgba(255,255,255,.15); }
 .tb-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 
 .page-info {
   font-size: 12px;
   color: #7070a0;
   white-space: nowrap;
-  min-width: 64px;
+  min-width: 50px;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
@@ -221,6 +242,8 @@ body {
   background:
     radial-gradient(ellipse at 50% 50%, rgba(60,60,120,.15) 0%, transparent 70%),
     #111118;
+  /* Tap anywhere to show/hide toolbar on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Subtle vignette effect */
@@ -370,20 +393,64 @@ body {
 }
 
 /* ── Responsive ── */
+
+/* Tablet */
 @media (max-width: 768px) {
-  .flipbook-scene { padding: 8px; }
-  .toolbar-title { max-width: 140px; font-size: 12px; }
-  .tb-btn { width: 44px; height: 44px; font-size: 18px; }
-  .btn-back { padding: 8px 12px; font-size: 13px; min-height: 44px; }
-  .page-info { font-size: 11px; min-width: 50px; }
-  .reader-toolbar { gap: 3px; padding: 0 8px; }
+  .flipbook-scene { padding: 10px 6px; }
+  .toolbar-title { max-width: 160px; font-size: 12px; }
+  .tb-btn { width: 40px; height: 40px; font-size: 17px; }
+  .btn-back { padding: 6px 10px; font-size: 12px; min-height: 40px; }
+  .page-info { font-size: 11px; min-width: 46px; }
+  .reader-toolbar { gap: 4px; padding: 0 8px; }
   .toolbar-sep { margin: 0 2px; }
-  .nav-zone { width: 20%; }
+  .nav-zone { width: 22%; }
+  .zoom-overlay canvas { max-width: 98vw; max-height: 92vh; }
 }
 
+/* Phone */
 @media (max-width: 480px) {
-  .toolbar-title { max-width: 90px; }
+  .reader-toolbar {
+    gap: 3px;
+    padding: 0 6px;
+    height: 44px;
+  }
+  .toolbar-title { max-width: 100px; font-size: 11px; }
+  .toolbar-sep { display: none; }
+  .tb-btn { width: 38px; height: 38px; font-size: 16px; border: none; }
+  .btn-back { border: none; padding: 5px 8px; font-size: 11px; min-height: 38px; }
+  .page-info { font-size: 10px; min-width: 40px; }
   #btnDownload { display: none; }
-  #btnFullscreen { display: none; }
-  .toolbar-sep:last-of-type { display: none; }
+  .flipbook-scene { padding: 6px 2px; }
+  .nav-zone { width: 28%; }
+  .zoom-close { width: 44px; height: 44px; top: 10px; right: 10px; font-size: 20px; }
+  .zoom-hint { bottom: max(16px, env(safe-area-inset-bottom, 16px)); font-size: 11px; }
+  .loader-content { padding: 0 20px; }
+  .load-progress { width: 160px; }
+}
+
+/* Very small phones (SE, 5s) */
+@media (max-width: 360px) {
+  .toolbar-title { max-width: 70px; }
+  .tb-btn { width: 34px; height: 34px; font-size: 15px; }
+  .btn-back { padding: 4px 6px; font-size: 10px; }
+  .page-info { min-width: 36px; font-size: 10px; }
+}
+
+/* Landscape phone — maximize reading area */
+@media (max-height: 500px) and (orientation: landscape) {
+  .reader-toolbar { height: 36px; }
+  .tb-btn { width: 30px; height: 30px; font-size: 14px; }
+  .btn-back { min-height: 30px; padding: 2px 8px; font-size: 11px; }
+  .flipbook-scene { padding: 4px 8px; }
+  .progress-bar { height: 2px; }
+}
+
+/* Bottom safe area for progress bar */
+.progress-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Prevent pull-to-refresh on mobile */
+@media (pointer: coarse) {
+  body { overscroll-behavior: none; }
 }

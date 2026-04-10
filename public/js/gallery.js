@@ -3,9 +3,9 @@
    ============================================ */
 
 const API = '/api/magazines';
-const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
 let allMagazines = [];
+let newestMagId  = null; // en son eklenen derginin id'si — "YENİ" badge
 
 // ---- Tema ----
 const html = document.documentElement;
@@ -34,6 +34,13 @@ async function loadMagazines() {
     const res = await fetch(API);
     if (!res.ok) throw new Error('API hatası');
     allMagazines = await res.json();
+    // En son eklenen dergiyi bul — "YENİ" etiketi sadece ona konur
+    if (allMagazines.length) {
+      const sorted = [...allMagazines].sort((a, b) =>
+        new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
+      );
+      newestMagId = sorted[0].id;
+    }
     renderStats(allMagazines);
     populateYearFilter(allMagazines);
     renderGallery(allMagazines);
@@ -91,7 +98,7 @@ function renderGallery(magazines) {
   }
 
   magazines.forEach(mag => {
-    const isNew = Date.now() - new Date(mag.publishedAt).getTime() < THIRTY_DAYS;
+    const isNew = mag.id === newestMagId;
     const card = document.createElement('a');
     card.className = 'magazine-card';
     card.href = `/reader.html?id=${encodeURIComponent(mag.id)}`;
