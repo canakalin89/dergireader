@@ -386,39 +386,47 @@ async function uploadFileToBlob(file, prefix, onProgress) {
     const err = await tokenRes.json().catch(() => ({}));
     throw new Error(err.error || `Yükleme izni alınamadı (${tokenRes.status})`);
   }
-  const { clientToken } = await tokenRes.json();
+  const tokenData = await tokenRes.json();
+  const clientToken = tokenData.clientToken;
+  if (!clientToken) {
+    console.error('[blob] token verisi:', tokenData);
+    throw new Error('Yükleme token\'ı alınamadı — lütfen tekrar deneyin');
+  }
 
-  // 2. Dosyayı doğrudan Vercel Blob'a yükle (fonksiyonu bypass eder)
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', `https://blob.vercel-storage.com/${pathname}`);
-    xhr.setRequestHeader('authorization', `Bearer ${clientToken}`);
-    xhr.setRequestHeader('x-api-version', '7');
-    xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream');
-    xhr.setRequestHeader('x-add-random-suffix', '1');
-    xhr.setRequestHeader('x-cache-control-max-age', '31536000');
+  // 2. Dosyayı doğrudan Vercel Blob'a yükle
+  onProgress?.(15, 'Dosya yükleniyor…');
+  let blobRes;
+  try {
+    blobRes = await fetch(`https://blob.vercel-storage.com/${pathname}`, {
+      method: 'PUT',
+      headers: {
+        authorization: `Bearer ${clientToken}`,
+        'x-api-version': '7',
+        'x-content-type': file.type || 'application/octet-stream',
+        'x-add-random-suffix': '1',
+      },
+      body: file,
+    });
+  } catch (netErr) {
+    console.error('[blob] ağ hatası:', netErr);
+    throw new Error(`Vercel Blob bağlantı hatası: ${netErr.message}`);
+  }
 
-    xhr.upload.onprogress = (ev) => {
-      if (ev.lengthComputable && onProgress) {
-        onProgress(Math.round(10 + (ev.loaded / ev.total) * 85), `Yükleniyor… ${Math.round(ev.loaded / ev.total * 100)}%`);
-      }
-    };
+  if (!blobRes.ok) {
+    const errText = await blobRes.text().catch(() => '');
+    console.error('[blob] HTTP hatası:', blobRes.status, errText);
+    const msg =
+      blobRes.status === 401 ? 'Yükleme yetkisi geçersiz (401)' :
+      blobRes.status === 403 ? 'Yükleme izni reddedildi (403)' :
+      blobRes.status === 413 ? `Dosya çok büyük — limit aşıldı (${(file.size/1024/1024).toFixed(1)} MB)` :
+      `Dosya yüklenemedi (${blobRes.status})${errText ? ': ' + errText.slice(0, 100) : ''}`;
+    throw new Error(msg);
+  }
 
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try { resolve(JSON.parse(xhr.responseText).url); }
-        catch { reject(new Error('Vercel Blob yanıtı okunamadı')); }
-      } else {
-        const msg = xhr.status === 413
-          ? `Dosya çok büyük — Vercel limiti aşıldı (${(file.size / 1024 / 1024).toFixed(1)} MB)`
-          : xhr.status === 401 ? 'Yükleme yetkisi geçersiz'
-          : `Dosya yüklenemedi (${xhr.status})`;
-        reject(new Error(msg));
-      }
-    };
-    xhr.onerror = () => reject(new Error('Ağ hatası — internet bağlantısını kontrol edin'));
-    xhr.send(file);
-  });
+  const blobData = await blobRes.json().catch(() => null);
+  if (!blobData?.url) throw new Error('Vercel Blob yanıtı geçersiz — URL alınamadı');
+  onProgress?.(100, 'Tamamlandı!');
+  return blobData.url;
 }
 
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
