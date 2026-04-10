@@ -310,6 +310,29 @@ document.getElementById('navRight').addEventListener('click', function() {
   if (pageFlip) pageFlip.flipNext();
 });
 
+// ── Swipe gesture (tüm sahne alanında) ──
+(function initSwipe() {
+  var startX = 0, startY = 0, tracking = false;
+  var THRESHOLD = 50;
+
+  scene.addEventListener('touchstart', function(e) {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+  }, { passive: true });
+
+  scene.addEventListener('touchend', function(e) {
+    if (!tracking || !pageFlip) return;
+    tracking = false;
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0) pageFlip.flipNext();
+    else pageFlip.flipPrev();
+  }, { passive: true });
+})();
+
 // Keyboard navigation
 document.addEventListener('keydown', function(e) {
   // Don't hijack input fields
