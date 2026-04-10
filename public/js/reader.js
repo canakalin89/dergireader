@@ -140,7 +140,7 @@ async function init() {
 
 // ── PDF Loading ──
 async function loadPdf(url) {
-  setMsg('PDF indiriliyor…');
+  setMsg('Sayfalar arşivden çekiliyor…');
   setLoadProgress(10);
 
   const task = pdfjsLib.getDocument({
@@ -150,11 +150,24 @@ async function loadPdf(url) {
     withCredentials: false,
   });
 
+  var tips = [
+    'Kapak tasarımı okunuyor…',
+    'Sayfalar düzenleniyor…',
+    'Mürekkep kuruyor…',
+    'Cilt yapıştırılıyor…',
+    'Sayfa kenarları kesiliyor…',
+  ];
+  var tipIdx = 0;
+
   task.onProgress = ({ loaded, total }) => {
     if (total > 0) {
       const pct = Math.min(Math.round((loaded / total) * 80) + 10, 90);
       setLoadProgress(pct);
-      setMsg('PDF indiriliyor… %' + Math.round((loaded / total) * 100));
+      var newTip = Math.floor((loaded / total) * tips.length);
+      if (newTip !== tipIdx && newTip < tips.length) {
+        tipIdx = newTip;
+        setMsg(tips[tipIdx]);
+      }
     }
   };
 
@@ -163,7 +176,7 @@ async function loadPdf(url) {
   totalLabel.textContent = totalPages;
 
   setLoadProgress(92);
-  setMsg(totalPages + ' sayfa hazırlanıyor…');
+  setMsg('Son rötuşlar… ' + totalPages + ' sayfa hazır');
 
   const firstPage = await pdfDoc.getPage(1);
   const baseVp    = firstPage.getViewport({ scale: RENDER_SCALE });
