@@ -163,12 +163,11 @@ async function renderPdfFirstPage(canvas, url) {
     canvas.width = vp.width;
     canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    canvas.style.display = 'block';
-    // Placeholder'ı gizle
+    // Placeholder'ı gizle — canvas zaten görünür
     var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
     if (ph) ph.style.display = 'none';
-  } catch {
-    canvas.style.display = 'none';
+  } catch (e) {
+    console.warn('[Cover] PDF render hatası:', e);
   }
 }
 
