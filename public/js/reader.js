@@ -60,8 +60,10 @@ const loadingMsg     = document.getElementById('loadingMsg');
 const loadProgressFill = document.getElementById('loadProgressFill');
 const readerError    = document.getElementById('readerError');
 const toolbarTitle   = document.getElementById('toolbarTitle');
+const btnFirst       = document.getElementById('btnFirst');
 const btnPrev        = document.getElementById('btnPrev');
 const btnNext        = document.getElementById('btnNext');
+const btnLast        = document.getElementById('btnLast');
 const pageLabel      = document.getElementById('pageInput');
 const totalLabel     = document.getElementById('totalPages');
 const btnDownload    = document.getElementById('btnDownload');
@@ -463,8 +465,10 @@ function scanPass(imgData, w, h, offsetX, offsetY, results) {
 function updateNav() {
   const cp = pageFlip ? pageFlip.getCurrentPageIndex() : currentIndex;
   pageLabel.textContent = cp + 1;
+  btnFirst.disabled = cp <= 0;
   btnPrev.disabled = cp <= 0;
   btnNext.disabled = cp >= totalPages - 1;
+  btnLast.disabled = cp >= totalPages - 1;
 
   // Progress bar
   if (progressFill && totalPages > 1) {
@@ -472,8 +476,10 @@ function updateNav() {
   }
 }
 
+btnFirst.addEventListener('click', function() { if (pageFlip) pageFlip.flip(0); });
 btnPrev.addEventListener('click', function() { if (pageFlip) pageFlip.flipPrev(); });
 btnNext.addEventListener('click', function() { if (pageFlip) pageFlip.flipNext(); });
+btnLast.addEventListener('click', function() { if (pageFlip) pageFlip.flip(totalPages - 1); });
 
 // Mobile tap zones
 document.getElementById('navLeft').addEventListener('click', function() {
