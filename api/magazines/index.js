@@ -33,13 +33,13 @@ module.exports = async function handler(req, res) {
     }
 
     const get = (v) => (Array.isArray(v) ? v[0] : v);
-    const title = get(fields.title);
-    const issue = parseInt(get(fields.issue));
-    const year = parseInt(get(fields.year));
-    const term = get(fields.term);
+    const title       = get(fields.title);
+    const issue       = get(fields.issue) ? parseInt(get(fields.issue)) : null;
+    const date        = get(fields.date) || null;
+    const description = (get(fields.description) || '').trim() || null;
 
-    if (!title || !issue || !year || !term) {
-      return res.status(400).json({ error: 'Başlık, sayı, yıl ve dönem zorunludur' });
+    if (!title) {
+      return res.status(400).json({ error: 'Başlık zorunludur' });
     }
 
     const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
@@ -83,9 +83,9 @@ module.exports = async function handler(req, res) {
       id: uuidv4(),
       title,
       issue,
-      year,
-      term,
-      publishedAt: new Date().toISOString(),
+      date,
+      description,
+      publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
       pdfUrl,
       coverUrl,
       views: 0,

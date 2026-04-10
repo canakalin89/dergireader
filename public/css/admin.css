@@ -300,6 +300,23 @@ body {
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
+.field--full { grid-column: 1 / -1; }
+.field-textarea {
+  resize: vertical;
+  min-height: 72px;
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+.mag-desc {
+  display: block;
+  font-size: .78rem;
+  color: var(--text-muted);
+  margin-top: .25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 32rem;
+}
 
 /* ---- Drop zones ---- */
 .file-grid {

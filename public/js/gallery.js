@@ -46,7 +46,9 @@ async function loadMagazines() {
 // ---- İstatistikler ----
 function renderStats(magazines) {
   document.getElementById('statCount').textContent = magazines.length;
-  const years = [...new Set(magazines.map(m => m.year))].sort();
+  const years = [...new Set(magazines.map(m =>
+    m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
+  ).filter(Boolean))].sort();
   if (years.length > 1) {
     document.getElementById('statYears').textContent = `${years[0]}–${years[years.length - 1]}`;
   } else if (years.length === 1) {
@@ -62,7 +64,9 @@ function renderStats(magazines) {
 // ---- Yıl filtresi doldur ----
 function populateYearFilter(magazines) {
   const sel = document.getElementById('filterYear');
-  const years = [...new Set(magazines.map(m => m.year))].sort((a, b) => b - a);
+  const years = [...new Set(magazines.map(m =>
+    m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
+  ).filter(Boolean))].sort((a, b) => b - a);
   years.forEach(y => {
     const opt = document.createElement('option');
     opt.value = y;
@@ -97,15 +101,20 @@ function renderGallery(magazines) {
       ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak görseli" loading="lazy" />${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
       : `<div class="card-cover"><canvas class="pdf-cover-canvas" data-pdf="${escHtml(mag.pdfUrl || '')}"></canvas>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`;
 
+    const metaParts = [];
+    if (mag.issue) metaParts.push(`<span>Sayı ${mag.issue}</span>`);
+    if (mag.date) {
+      metaParts.push(`<span class="${metaParts.length ? 'dot' : ''}">${new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' })}</span>`);
+    } else if (mag.year) {
+      metaParts.push(`<span class="${metaParts.length ? 'dot' : ''}">${mag.year}</span>`);
+    }
+
     card.innerHTML = `
       ${coverHtml}
       <div class="card-info">
         <div class="card-title">${escHtml(mag.title)}</div>
-        <div class="card-meta">
-          <span>Sayı ${mag.issue}</span>
-          <span class="dot">${mag.year}</span>
-          ${mag.term ? `<span class="dot">${escHtml(mag.term)}</span>` : ''}
-        </div>
+        ${mag.description ? `<div class="card-desc">${escHtml(mag.description)}</div>` : ''}
+        <div class="card-meta">${metaParts.join('')}</div>
       </div>`;
 
     grid.appendChild(card);
@@ -154,19 +163,16 @@ async function renderPdfFirstPage(canvas, url) {
 
 function applyFilters() {
   const year = document.getElementById('filterYear').value;
-  const term = document.getElementById('filterTerm').value;
-  const filtered = allMagazines.filter(m =>
-    (!year || String(m.year) === year) &&
-    (!term || m.term === term)
-  );
+  const filtered = allMagazines.filter(m => {
+    const magYear = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
+    return !year || magYear === year;
+  });
   renderGallery(filtered);
 }
 
 document.getElementById('filterYear').addEventListener('change', applyFilters);
-document.getElementById('filterTerm').addEventListener('change', applyFilters);
 document.getElementById('filterReset').addEventListener('click', () => {
   document.getElementById('filterYear').value = '';
-  document.getElementById('filterTerm').value = '';
   renderGallery(allMagazines);
 });
 

@@ -274,7 +274,10 @@ function renderList(magazines) {
       </div>
       <div class="mag-details">
         <h3>${esc(mag.title)}</h3>
-        <div class="mag-meta">Sayı ${mag.issue} · ${mag.year} ${mag.term ? '· ' + esc(mag.term) : ''} · ${new Date(mag.publishedAt).toLocaleDateString('tr-TR')}</div>
+        <div class="mag-meta">
+          ${mag.issue ? `Sayı ${mag.issue} · ` : ''}${mag.date ? new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) : (mag.year || '')}
+          ${mag.description ? `<span class="mag-desc">${esc(mag.description)}</span>` : ''}
+        </div>
       </div>
       <div class="mag-actions">
         <a href="/reader.html?id=${esc(mag.id)}" target="_blank" class="btn btn-outline" title="Önizle">👁</a>

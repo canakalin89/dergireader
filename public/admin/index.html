@@ -99,27 +99,21 @@
         <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
 
           <div class="field-grid">
-            <div class="field">
+            <div class="field field--full">
               <label for="inTitle">Başlık <span class="req">*</span></label>
               <input class="field-input" type="text" id="inTitle" name="title" placeholder="Okul Dergisi" required maxlength="120" />
             </div>
             <div class="field">
-              <label for="inIssue">Sayı No <span class="req">*</span></label>
-              <input class="field-input" type="number" id="inIssue" name="issue" placeholder="1" min="1" required />
+              <label for="inIssue">Sayı No</label>
+              <input class="field-input" type="number" id="inIssue" name="issue" placeholder="1" min="1" />
             </div>
             <div class="field">
-              <label for="inYear">Yıl <span class="req">*</span></label>
-              <input class="field-input" type="number" id="inYear" name="year" placeholder="2025" min="2000" max="2099" required />
+              <label for="inDate">Tarih</label>
+              <input class="field-input" type="date" id="inDate" name="date" />
             </div>
-            <div class="field">
-              <label for="inTerm">Dönem <span class="req">*</span></label>
-              <select class="field-input field-select" id="inTerm" name="term" required>
-                <option value="">Seçin…</option>
-                <option value="Güz">Güz</option>
-                <option value="Bahar">Bahar</option>
-                <option value="Yaz">Yaz</option>
-                <option value="Yıllık">Yıllık</option>
-              </select>
+            <div class="field field--full">
+              <label for="inDesc">Açıklama</label>
+              <textarea class="field-input field-textarea" id="inDesc" name="description" placeholder="Dergi hakkında kısa bir açıklama…" rows="3" maxlength="500"></textarea>
             </div>
           </div>
 
