@@ -427,6 +427,22 @@ body {
   font-size: .75rem;
   color: var(--text-muted);
   border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.site-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.footer-sep {
+  opacity: .4;
 }
 
 /* ---- Responsive ---- */
