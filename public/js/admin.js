@@ -503,9 +503,10 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
     }
 
     if (!magazineId) return;
-    const res = await fetch(`/api/magazines/${encodeURIComponent(magazineId)}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
+    const res = await fetch(`/api/magazines/${encodeURIComponent(magazineId)}?action=delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: '{}',
     });
     if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
     if (!res.ok) {
@@ -567,8 +568,8 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
   }
 
   try {
-    const res = await fetch(`/api/magazines/${id}`, {
-      method: 'PATCH',
+    const res = await fetch(`/api/magazines/${encodeURIComponent(id)}?action=update`, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
