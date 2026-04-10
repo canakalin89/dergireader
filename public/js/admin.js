@@ -84,6 +84,7 @@ function checkUrlToken() {
   const authError = params.get('auth_error');
   if (authError) { history.replaceState({}, '', '/admin/'); showToast('Google ile giriş başarısız.', 'error'); return; }
   if (token) { saveToken(token); history.replaceState({}, '', '/admin/'); }
+  if (params.get('register') === '1') { window.setAuthMode('register'); history.replaceState({}, '', '/admin/'); }
 }
 
 function showLoginScreen() {

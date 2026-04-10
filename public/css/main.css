@@ -128,6 +128,19 @@ body {
 }
 .admin-link:hover { color: rgba(255,255,255,.8); border-color: rgba(255,255,255,.3); }
 
+.register-link {
+  font-size: .75rem;
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  padding: .3rem .85rem;
+  background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 6px;
+  transition: all var(--tr);
+}
+.register-link:hover { background: rgba(255,255,255,.25); border-color: rgba(255,255,255,.5); }
+
 /* ---- Error banner ---- */
 .error-banner {
   background: #3b0f0f;
@@ -518,6 +531,9 @@ body {
   /* Yönetim linki: ikon olarak küçük tut, metin gizle */
   .admin-link { font-size: 0; padding: .35rem .5rem; }
   .admin-link::after { content: '⚙'; font-size: .85rem; }
+
+  /* Kayıt ol: kısa tut mobilde */
+  .register-link { font-size: .7rem; padding: .28rem .6rem; }
 
   /* Header daha sıkışık */
   .header-inner { padding: 0 .85rem; gap: .5rem; }

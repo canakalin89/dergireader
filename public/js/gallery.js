@@ -22,15 +22,21 @@ function drCoverFallback(img) {
 }
 
 // Yönetim linkini sadece yetkililere göster (JWT client-side decode)
+// Giriş yapmışsa Kayıt Ol butonunu gizle
 (function checkAdminLink() {
   try {
     var token = localStorage.getItem('dr_admin_token');
+    var regLink = document.getElementById('registerLink');
     if (!token) return;
     var payload = JSON.parse(atob(token.split('.')[1]));
     var allowed = ['editor', 'admin', 'owner'];
     if (payload && allowed.indexOf(payload.role) !== -1) {
       var link = document.getElementById('adminLink');
       if (link) link.style.display = '';
+    }
+    // Herhangi bir geçerli token varsa (pending dahil) kayıt butonunu gizle
+    if (payload) {
+      if (regLink) regLink.style.display = 'none';
     }
   } catch (e) { /* geçersiz token, gösterme */ }
 })();
