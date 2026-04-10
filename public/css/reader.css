@@ -335,6 +335,22 @@ body {
   background: rgba(59, 130, 246, .18) !important;
   border-color: rgba(59, 130, 246, .4);
 }
+/* QR code hit area */
+.qr-hit:hover {
+  background: rgba(16, 185, 129, .2) !important;
+  border-color: rgba(16, 185, 129, .8) !important;
+}
+.qr-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(16, 185, 129, .75);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-bottom: 2px;
+  pointer-events: none;
+  line-height: 1.3;
+}
 
 /* ── Reading progress bar ── */
 .progress-bar {

@@ -343,6 +343,111 @@ async function renderPdfPage(pageNum) {
       }
     }
   } catch(e) { /* annotation extraction failed — ignore */ }
+
+  // QR code scanning
+  scanQrCodes(canvas, container);
+}
+
+// ── QR Code Scanner ──
+function scanQrCodes(canvas, container) {
+  if (typeof jsQR !== 'function') return;
+  try {
+    var ctx = canvas.getContext('2d');
+    var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    var found = [];
+    // Multi-pass: full image scan, then quadrant scans for small QR codes
+    scanPass(imgData, canvas.width, canvas.height, 0, 0, found);
+    // Quadrant scans (smaller region = better detection for small QRs)
+    var hw = Math.floor(canvas.width / 2), hh = Math.floor(canvas.height / 2);
+    for (var qy = 0; qy < 2; qy++) {
+      for (var qx = 0; qx < 2; qx++) {
+        var sx = qx * hw, sy = qy * hh;
+        var qData = ctx.getImageData(sx, sy, hw, hh);
+        scanPass(qData, hw, hh, sx, sy, found);
+      }
+    }
+
+    if (!found.length) return;
+
+    // Ensure link layer exists
+    var linkLayer = container.querySelector('.pdf-link-layer');
+    if (!linkLayer) {
+      linkLayer = document.createElement('div');
+      linkLayer.className = 'pdf-link-layer';
+      linkLayer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+      container.style.position = 'relative';
+      container.appendChild(linkLayer);
+    }
+
+    // Deduplicate by URL
+    var seen = {};
+    found.forEach(function(qr) {
+      var key = qr.url + '|' + Math.round(qr.x / 20);
+      if (seen[key]) return;
+      seen[key] = true;
+
+      var left   = (qr.x / canvas.width * 100) + '%';
+      var top    = (qr.y / canvas.height * 100) + '%';
+      var width  = (qr.w / canvas.width * 100) + '%';
+      var height = (qr.h / canvas.height * 100) + '%';
+
+      var link = document.createElement('a');
+      link.href = qr.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'pdf-link-hit qr-hit';
+      link.style.cssText =
+        'position:absolute;pointer-events:auto;cursor:pointer;' +
+        'left:' + left + ';top:' + top + ';' +
+        'width:' + width + ';height:' + height + ';' +
+        'background:rgba(16,185,129,.1);border:1.5px dashed rgba(16,185,129,.5);border-radius:4px;' +
+        'transition:background .2s,border-color .2s;' +
+        'display:flex;align-items:flex-end;justify-content:center;';
+      link.title = '🔗 QR: ' + (qr.url.length > 50 ? qr.url.substring(0, 47) + '…' : qr.url);
+
+      // Small QR badge
+      var badge = document.createElement('span');
+      badge.className = 'qr-badge';
+      badge.textContent = 'QR';
+      link.appendChild(badge);
+
+      link.addEventListener('mouseenter', function() {
+        this.style.background = 'rgba(16,185,129,.2)';
+        this.style.borderColor = 'rgba(16,185,129,.8)';
+      });
+      link.addEventListener('mouseleave', function() {
+        this.style.background = 'rgba(16,185,129,.1)';
+        this.style.borderColor = 'rgba(16,185,129,.5)';
+      });
+      link.addEventListener('click', function(ev) { ev.stopPropagation(); });
+
+      linkLayer.appendChild(link);
+    });
+  } catch(e) { /* QR scan failed — ignore */ }
+}
+
+function scanPass(imgData, w, h, offsetX, offsetY, results) {
+  var code = jsQR(imgData.data, w, h, { inversionAttempts: 'dontInvert' });
+  if (!code || !code.data) return;
+  var url = code.data.trim();
+  // Only treat as link if it looks like a URL
+  if (!/^https?:\/\//i.test(url)) return;
+
+  var loc = code.location;
+  var x1 = Math.min(loc.topLeftCorner.x, loc.bottomLeftCorner.x) + offsetX;
+  var y1 = Math.min(loc.topLeftCorner.y, loc.topRightCorner.y) + offsetY;
+  var x2 = Math.max(loc.topRightCorner.x, loc.bottomRightCorner.x) + offsetX;
+  var y2 = Math.max(loc.bottomLeftCorner.y, loc.bottomRightCorner.y) + offsetY;
+
+  // Add padding around QR code
+  var pad = Math.max((x2 - x1), (y2 - y1)) * 0.08;
+  results.push({
+    url: url,
+    x: Math.max(0, x1 - pad),
+    y: Math.max(0, y1 - pad),
+    w: Math.min(x2 - x1 + pad * 2, w * 2),
+    h: Math.min(y2 - y1 + pad * 2, h * 2)
+  });
 }
 
 // ── Navigation ──
