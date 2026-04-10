@@ -7,7 +7,7 @@ async function getMagazines() {
   try {
     const { blobs } = await list({ prefix: METADATA_KEY });
     if (!blobs.length) return [];
-    const res = await fetch(blobs[0].url);
+    const res = await fetch(blobs[0].url + '?t=' + Date.now());
     return await res.json();
   } catch {
     return [];
