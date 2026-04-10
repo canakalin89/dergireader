@@ -2,6 +2,7 @@ const { put, list, del } = require('@vercel/blob');
 
 const METADATA_KEY = 'data/magazines.json';
 const USERS_KEY = 'data/users.json';
+const VIEWS_KEY  = 'data/views.json';
 const MAX_RETRIES = 2;
 
 // ── Yardımcılar ─────────────────────────────────────────────────────────────
@@ -34,6 +35,15 @@ async function withRetry(fn, label) {
 async function readBlobJson(key) {
   const { blobs } = await list({ prefix: key });
   if (!blobs.length) return [];
+  const url = blobs[0].url + '?t=' + Date.now();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Blob okuma hatası: ${res.status}`);
+  return await res.json();
+}
+
+async function readBlobJsonObj(key) {
+  const { blobs } = await list({ prefix: key });
+  if (!blobs.length) return {};
   const url = blobs[0].url + '?t=' + Date.now();
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Blob okuma hatası: ${res.status}`);
@@ -76,6 +86,19 @@ async function deleteFile(url) {
   try { await del(url); } catch { /* blob zaten silinmiş olabilir */ }
 }
 
+// ── Görüntüleme sayaçları ───────────────────────────────────────────────────
+
+async function getViews() {
+  return withRetry(() => readBlobJsonObj(VIEWS_KEY), 'getViews').catch(() => ({}));
+}
+
+async function incrementView(magazineId) {
+  const views = await getViews();
+  views[magazineId] = (views[magazineId] || 0) + 1;
+  await withRetry(() => writeBlobJson(VIEWS_KEY, views), 'incrementView');
+  return views[magazineId];
+}
+
 // ── Kullanıcı CRUD ──────────────────────────────────────────────────────────
 
 async function getUsers() {
@@ -114,4 +137,5 @@ module.exports = {
   getMagazines, saveMagazines,
   uploadFile, deleteFile,
   getUsers, saveUsers, upsertUser,
+  getViews, incrementView,
 };

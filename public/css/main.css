@@ -362,6 +362,13 @@ body {
   flex-wrap: wrap;
 }
 .card-meta .dot::before { content: '·'; }
+.view-count {
+  margin-left: auto;
+  font-size: .68rem;
+  color: var(--text-muted);
+  opacity: .7;
+  white-space: nowrap;
+}
 
 .card-desc {
   font-size: .72rem;

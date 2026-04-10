@@ -168,6 +168,15 @@ async function loadPdf(url) {
   setLoadProgress(92);
   setMsg('Keyifli okumalar! ' + totalPages + ' sayfa hazır');
 
+  // Görüntüleme sayacını artır (fire & forget)
+  if (magazineId) {
+    fetch('/api/views', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: magazineId }),
+    }).catch(() => {});
+  }
+
   const firstPage = await pdfDoc.getPage(1);
   const baseVp    = firstPage.getViewport({ scale: RENDER_SCALE });
   pageW = Math.floor(baseVp.width);

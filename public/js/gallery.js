@@ -40,12 +40,20 @@ const PALETTES = [
   { bg: 'linear-gradient(145deg, #1b2d3d, #2d5c8a)', ac: '#4d8ae8' },
 ];
 
+let viewsData = {};
+
 // ---- Veri yükleme ----
 async function loadMagazines() {
   try {
-    const res = await fetch(API);
-    if (!res.ok) throw new Error('API hatası');
-    allMagazines = await res.json();
+    const [magRes, viewsRes] = await Promise.all([
+      fetch(API),
+      fetch('/api/views').catch(() => null),
+    ]);
+    if (!magRes.ok) throw new Error('API hatası');
+    allMagazines = await magRes.json();
+    if (viewsRes && viewsRes.ok) {
+      viewsData = await viewsRes.json().catch(() => ({}));
+    }
     if (allMagazines.length) {
       const sorted = [...allMagazines].sort((a, b) =>
         new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
@@ -141,13 +149,15 @@ function renderGallery(magazines) {
     } else if (mag.year) {
       meta.push('<span class="' + (meta.length ? 'dot' : '') + '">' + mag.year + '</span>');
     }
+    var vCount = viewsData[mag.id] || 0;
+    var viewBadge = '<span class="view-count' + (meta.length ? ' dot' : '') + '" title="Görüntülenme">👁 ' + formatViews(vCount) + '</span>';
 
     card.innerHTML =
       '<div class="card-cover">' + inner + badge + '</div>' +
       '<div class="card-info">' +
         '<div class="card-title">' + escHtml(mag.title) + '</div>' +
         (mag.description ? '<div class="card-desc">' + escHtml(mag.description) + '</div>' : '') +
-        '<div class="card-meta">' + meta.join('') + '</div>' +
+        '<div class="card-meta">' + meta.join('') + viewBadge + '</div>' +
       '</div>';
 
     grid.appendChild(card);
@@ -173,6 +183,10 @@ document.getElementById('filterReset').addEventListener('click', function () {
 // ---- Yardımcı ----
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatViews(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'b';
+  return String(n);
 }
 
 // Başlat
