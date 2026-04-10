@@ -136,11 +136,13 @@ const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf
 
 function initPdfCovers() {
   const canvases = document.querySelectorAll('canvas.pdf-cover-canvas:not([data-rendered])');
-  if (!canvases.length || typeof pdfjsLib === 'undefined') return;
+  if (!canvases.length || typeof pdfjsLib === 'undefined') {
+    console.log('[Cover] Atlandı — canvas:', canvases.length, 'pdfjsLib:', typeof pdfjsLib);
+    return;
+  }
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc)
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
 
-  // Az sayıda dergi — hepsini hemen render et
   canvases.forEach(c => renderPdfFirstPage(c, c.dataset.pdf));
 }
 
@@ -149,12 +151,15 @@ async function renderPdfFirstPage(canvas, url) {
   canvas.dataset.rendered = '1';
   var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
   try {
-    var pdf = await pdfjsLib.getDocument({
-      url: url,
-      disableRange: true,
-      disableStream: true,
-      withCredentials: false
-    }).promise;
+    // PDF'i önce ArrayBuffer olarak indir, sonra PDF.js'e ver
+    console.log('[Cover] PDF indiriliyor:', url.substring(0, 60) + '...');
+    var resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var data = await resp.arrayBuffer();
+    console.log('[Cover] PDF boyut:', data.byteLength, 'byte');
+    if (data.byteLength < 100) throw new Error('PDF çok küçük: ' + data.byteLength);
+
+    var pdf = await pdfjsLib.getDocument({ data: data }).promise;
     var page = await pdf.getPage(1);
     var vp0 = page.getViewport({ scale: 1 });
     var scale = 400 / vp0.width;
@@ -162,9 +167,10 @@ async function renderPdfFirstPage(canvas, url) {
     canvas.width = vp.width;
     canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    console.log('[Cover] Render başarılı:', canvas.width + 'x' + canvas.height);
     if (ph) ph.style.display = 'none';
   } catch (e) {
-    console.warn('[Cover] PDF kapak render hatası:', url, e);
+    console.warn('[Cover] PDF kapak render hatası:', e);
     canvas.style.display = 'none';
   }
 }
