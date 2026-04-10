@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Dark background -->
+  <rect width="32" height="32" rx="6" fill="#15120e"/>
+
+  <!-- Left page — warm paper -->
+  <rect x="3" y="5" width="11.5" height="22" rx="1.5" fill="#f0ece5"/>
+  <!-- Text lines on left page -->
+  <rect x="5"   y="10"   width="7.5" height="1.5" rx="0.75" fill="#c8bfb4"/>
+  <rect x="5"   y="13.5" width="7.5" height="1.5" rx="0.75" fill="#c8bfb4"/>
+  <rect x="5"   y="17"   width="5.5" height="1.5" rx="0.75" fill="#c8bfb4"/>
+  <rect x="5"   y="20.5" width="6.5" height="1.5" rx="0.75" fill="#c8bfb4"/>
+
+  <!-- Spine -->
+  <rect x="14" y="5" width="4" height="22" fill="#2d261f"/>
+  <!-- Spine highlight -->
+  <rect x="15" y="5" width="1" height="22" fill="#3d342a" opacity="0.8"/>
+
+  <!-- Right page — accent -->
+  <rect x="17.5" y="5" width="11.5" height="22" rx="1.5" fill="#c0540a"/>
+  <!-- Subtle sheen on right page -->
+  <rect x="17.5" y="5" width="11.5" height="4" rx="1.5" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- D glyph on right page — path based, no font dependency -->
+  <path d="M21 11 L23.5 11 Q28.5 11 28.5 16 Q28.5 21 23.5 21 L21 21 Z
+           M22.8 12.6 L23.5 12.6 Q26.6 12.6 26.6 16 Q26.6 19.4 23.5 19.4 L22.8 19.4 Z"
+        fill="rgba(255,255,255,0.92)"/>
+</svg>

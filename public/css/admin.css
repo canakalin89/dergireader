@@ -179,6 +179,13 @@ body {
   margin: 0 auto 1.25rem;
 }
 
+.login-logo-img {
+  width: 160px;
+  height: auto;
+  margin: 0 auto 1.25rem;
+  display: block;
+}
+
 .login-card h2 {
   font-family: var(--font-head);
   font-size: 1.4rem;
