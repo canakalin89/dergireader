@@ -1,28 +1,31 @@
 /* ============================================
-   reader.css — StPageFlip Dergi Okuyucu
+   reader.css — Dergi Okuyucu v3
+   Sayfa çevirme animasyonlu flipbook
    ============================================ */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #1a1a2e;
+  background: #111118;
   color: #e0e0e0;
   font-family: "Segoe UI", system-ui, sans-serif;
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-/* ---- Toolbar ---- */
+/* ── Toolbar ── */
 .reader-toolbar {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 12px;
   height: 48px;
-  background: #0f0f1a;
-  border-bottom: 1px solid #2a2a4a;
+  background: #0a0a12;
+  border-bottom: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
   z-index: 100;
 }
@@ -30,19 +33,19 @@ body {
 .toolbar-title {
   font-size: 13px;
   font-weight: 600;
-  color: #c0c0d8;
+  color: #b0b0c8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 240px;
+  max-width: 300px;
 }
 
-.toolbar-sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 4px; }
+.toolbar-sep { width: 1px; height: 20px; background: rgba(255,255,255,.08); margin: 0 4px; }
 .toolbar-spacer { flex: 1; }
 
 .btn-back {
   background: none;
-  border: 1px solid #3a3a5a;
+  border: 1px solid rgba(255,255,255,.12);
   color: #a0a0c0;
   padding: 5px 10px;
   border-radius: 6px;
@@ -51,11 +54,11 @@ body {
   transition: all .15s;
   white-space: nowrap;
 }
-.btn-back:hover { background: #2a2a4a; color: #fff; }
+.btn-back:hover { background: rgba(255,255,255,.08); color: #fff; }
 
 .tb-btn {
   background: none;
-  border: 1px solid #3a3a5a;
+  border: 1px solid rgba(255,255,255,.12);
   color: #a0a0c0;
   width: 32px;
   height: 32px;
@@ -69,46 +72,89 @@ body {
   text-decoration: none;
   flex-shrink: 0;
 }
-.tb-btn:hover { background: #2a2a4a; color: #fff; border-color: #5a5a8a; }
-.tb-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+.tb-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.tb-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 
 .page-info {
   font-size: 12px;
-  color: #8080a0;
+  color: #7070a0;
   white-space: nowrap;
   min-width: 64px;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
-/* ---- Loading overlay ---- */
+/* ── Loading overlay ── */
 .loading-overlay {
   position: fixed;
   inset: 0;
-  background: #1a1a2e;
+  background: #111118;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.loader-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  z-index: 200;
-  color: #8080b0;
+  gap: 20px;
+  color: #7070a0;
   font-size: 14px;
 }
 
-.spinner {
-  width: 40px; height: 40px;
-  border: 3px solid #2a2a4a;
-  border-top-color: #6060c0;
-  border-radius: 50%;
-  animation: spin .8s linear infinite;
+/* Book flip loader animation */
+.book-loader {
+  width: 60px;
+  height: 50px;
+  position: relative;
+  perspective: 400px;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ---- Error ---- */
+.book-loader .book-page {
+  position: absolute;
+  width: 30px;
+  height: 50px;
+  right: 0;
+  background: linear-gradient(135deg, #6060c0 0%, #4040a0 100%);
+  border-radius: 0 4px 4px 0;
+  transform-origin: left center;
+  animation: bookFlip 1.8s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(80,80,180,.3);
+}
+
+.book-loader .book-page:nth-child(1) { animation-delay: 0s; }
+.book-loader .book-page:nth-child(2) { animation-delay: 0.3s; }
+.book-loader .book-page:nth-child(3) { animation-delay: 0.6s; }
+
+@keyframes bookFlip {
+  0%, 100% { transform: rotateY(0deg); opacity: 1; }
+  50% { transform: rotateY(-180deg); opacity: 0.5; }
+}
+
+/* Loading progress bar */
+.load-progress {
+  width: 200px;
+  height: 3px;
+  background: rgba(255,255,255,.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.load-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6060c0, #8080e0);
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+
+/* ── Error ── */
 .reader-error {
   position: fixed;
   inset: 0;
-  background: #1a1a2e;
+  background: #111118;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -120,67 +166,216 @@ body {
 }
 .err-icon { font-size: 48px; }
 .reader-error h3 { font-size: 20px; color: #e0e0f0; }
-.reader-error p { color: #8080a0; font-size: 14px; max-width: 360px; }
+.reader-error p { color: #7070a0; font-size: 14px; max-width: 400px; line-height: 1.5; }
 
-/* ---- Flipbook scene ---- */
+/* ── Drive fallback ── */
+.drive-fallback {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.fallback-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #1a1a30;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-size: 12px;
+  color: #8080b0;
+}
+
+.fallback-info { font-weight: 500; }
+.fallback-bar small { color: #6060a0; }
+
+.drive-frame {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #0a0a12;
+}
+
+/* ── Flipbook scene ── */
 .flipbook-scene {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 16px;
-  background: radial-gradient(ellipse at center, #252540 0%, #1a1a2e 100%);
+  padding: 20px;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(60,60,120,.15) 0%, transparent 70%),
+    #111118;
 }
 
-/* ---- StPageFlip page elements ---- */
+/* Subtle vignette effect */
+.flipbook-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.4) 100%);
+  z-index: 1;
+}
+
+#flipbook { z-index: 2; position: relative; }
+
+/* ── Navigation zones (mobile tap areas) ── */
+.nav-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 15%;
+  min-width: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 10;
+  -webkit-tap-highlight-color: transparent;
+}
+.nav-zone-left { left: 0; }
+.nav-zone-right { right: 0; }
+.nav-zone:active { background: rgba(255,255,255,.03); }
+
+/* ── Page elements ── */
 .flip-page {
   background: #fff;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: grab;
 }
 
 .flip-page canvas {
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
 .flip-page-loading {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f0f0f0;
-  color: #aaa;
-  font-size: 13px;
+  gap: 10px;
+  background: #f5f5f5;
+  color: #bbb;
+  font-size: 12px;
 }
 
-@media (max-width: 600px) {
+.page-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #ddd;
+  border-top-color: #888;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Reading progress bar ── */
+.progress-bar {
+  height: 3px;
+  background: rgba(255,255,255,.04);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5050a0, #7070d0, #5050a0);
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+  transition: width .4s ease;
+  border-radius: 0 2px 2px 0;
+}
+
+@keyframes shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ── Zoom overlay ── */
+.zoom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.92);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.zoom-overlay canvas {
+  max-width: 95vw;
+  max-height: 95vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 0 60px rgba(0,0,0,.5);
+}
+
+.zoom-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .15s;
+  z-index: 301;
+}
+.zoom-close:hover { background: rgba(255,255,255,.2); }
+
+.zoom-hint {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,.4);
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 301;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
   .flipbook-scene { padding: 8px; }
-
-  /* Daha geniş başlık */
   .toolbar-title { max-width: 140px; font-size: 12px; }
-
-  /* Dokunma hedefleri: min 44px */
   .tb-btn { width: 44px; height: 44px; font-size: 18px; }
   .btn-back { padding: 8px 12px; font-size: 13px; min-height: 44px; }
-
-  /* Tam ekran ve indirme küçük ekranda gizle */
-  #btnFullscreen { display: none; }
-
-  /* Sayfa bilgisi daha kompakt */
   .page-info { font-size: 11px; min-width: 50px; }
-
-  /* Toolbar sıkışmasın: gap daralt */
   .reader-toolbar { gap: 3px; padding: 0 8px; }
   .toolbar-sep { margin: 0 2px; }
+  .nav-zone { width: 20%; }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .toolbar-title { max-width: 90px; }
   #btnDownload { display: none; }
+  #btnFullscreen { display: none; }
+  .toolbar-sep:last-of-type { display: none; }
 }

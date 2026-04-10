@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Dergi Okuyucu</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/css/reader.css" />
@@ -27,25 +27,55 @@
 
   <!-- Yükleme ekranı -->
   <div class="loading-overlay" id="loadingOverlay">
-    <div class="spinner"></div>
-    <span id="loadingMsg">PDF yükleniyor…</span>
+    <div class="loader-content">
+      <div class="book-loader">
+        <div class="book-page"></div>
+        <div class="book-page"></div>
+        <div class="book-page"></div>
+      </div>
+      <span id="loadingMsg">PDF yükleniyor…</span>
+      <div class="load-progress" id="loadProgress">
+        <div class="load-progress-fill" id="loadProgressFill"></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Hata -->
+  <!-- Hata ekranı -->
   <div class="reader-error" id="readerError" style="display:none">
     <div class="err-icon">⚠️</div>
     <h3>PDF açılamadı</h3>
     <p id="errorMsg">Bir hata oluştu.</p>
-    <button class="tb-btn" onclick="history.back()">← Geri dön</button>
+    <button class="btn-back" onclick="history.back()">← Geri dön</button>
   </div>
 
-  <!-- Flipbook alanı (doğrudan PDF için) -->
+  <!-- Drive fallback (proxy başarısız olursa) -->
+  <div class="drive-fallback" id="driveFallback" style="display:none">
+    <div class="fallback-bar">
+      <span class="fallback-info">📖 PDF büyük olduğu için Google Drive önizlemesi açıldı</span>
+      <small id="fallbackError"></small>
+    </div>
+    <iframe id="driveFrame" class="drive-frame"></iframe>
+  </div>
+
+  <!-- Flipbook alanı -->
   <div class="flipbook-scene" id="flipbookScene">
     <div id="flipbook"></div>
+    <!-- Sol/sağ tıklama bölgeleri (mobil) -->
+    <button class="nav-zone nav-zone-left" id="navLeft" aria-label="Önceki sayfa"></button>
+    <button class="nav-zone nav-zone-right" id="navRight" aria-label="Sonraki sayfa"></button>
   </div>
 
-  <!-- Google Drive embed (Drive linkleri için) -->
-  <iframe id="driveFrame" style="display:none;width:100%;height:100%;border:none;position:fixed;top:52px;left:0;right:0;bottom:0;height:calc(100vh - 52px);"></iframe>
+  <!-- Okuma ilerleme çubuğu -->
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Sayfa zoom modal -->
+  <div class="zoom-overlay" id="zoomOverlay" style="display:none">
+    <canvas id="zoomCanvas"></canvas>
+    <button class="zoom-close" id="zoomClose">✕</button>
+    <span class="zoom-hint">Kapatmak için tıklayın veya ESC</span>
+  </div>
 
   <script src="/js/reader.js"></script>
 </body>
