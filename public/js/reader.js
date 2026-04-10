@@ -30,6 +30,12 @@ const btnDownload    = document.getElementById('btnDownload');
 const flipbookEl     = document.getElementById('flipbook');
 const scene          = document.getElementById('flipbookScene');
 
+// ---- Google Drive yardımcıları ----
+function getDriveFileId(url) {
+  const m = url.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : null;
+}
+
 // ---- Ana başlangıç ----
 async function init() {
   if (!magazineId) return showError('Geçersiz dergi bağlantısı.');
@@ -41,19 +47,43 @@ async function init() {
     magazineData = list.find(m => m.id === magazineId);
     if (!magazineData) return showError('Dergi bulunamadı.');
 
-    document.title   = `${magazineData.title} — Sayı ${magazineData.issue}`;
-    toolbarTitle.textContent = `${magazineData.title} #${magazineData.issue}`;
+    const title = magazineData.title + (magazineData.issue ? ` #${magazineData.issue}` : '');
+    document.title = title + ' — DergiReader';
+    toolbarTitle.textContent = title;
 
-    if (magazineData.pdfUrl) {
-      btnDownload.href     = magazineData.pdfUrl;
-      btnDownload.download = `${magazineData.title}-sayi-${magazineData.issue}.pdf`;
-      await loadPdf(magazineData.pdfUrl);
+    if (!magazineData.pdfUrl) return showError('Bu dergiye ait PDF bulunamadı.');
+
+    btnDownload.href     = magazineData.pdfUrl;
+    btnDownload.download = `${magazineData.title}.pdf`;
+
+    const fileId = getDriveFileId(magazineData.pdfUrl);
+    if (fileId) {
+      loadDriveEmbed(fileId);
     } else {
-      showError('Bu dergiye ait PDF bulunamadı.');
+      await loadPdf(magazineData.pdfUrl);
     }
   } catch (err) {
     showError('Dergi bilgileri yüklenemedi: ' + err.message);
   }
+}
+
+// ---- Google Drive iframe modu ----
+function loadDriveEmbed(fileId) {
+  const frame = document.getElementById('driveFrame');
+  const scene = document.getElementById('flipbookScene');
+  const toolbar = document.getElementById('toolbar');
+
+  // Sayfa kontrollerini gizle (Drive kendi navigasyonunu sağlar)
+  document.getElementById('btnPrev').style.display  = 'none';
+  document.getElementById('btnNext').style.display  = 'none';
+  document.querySelector('.page-info').style.display = 'none';
+  document.querySelectorAll('.toolbar-sep').forEach(s => s.style.display = 'none');
+  document.getElementById('btnFullscreen').style.display = 'none';
+
+  scene.style.display = 'none';
+  frame.style.display = 'block';
+  frame.src = `https://drive.google.com/file/d/${fileId}/preview`;
+  hideLoading();
 }
 
 // ---- PDF yükleme ----

@@ -115,7 +115,12 @@
               <label for="inPdfUrl">PDF Bağlantısı <span class="req">*</span></label>
               <input class="field-input" type="url" id="inPdfUrl" name="pdfUrl" required
                 placeholder="https://drive.google.com/… veya https://…/dergi.pdf" />
-              <p class="url-hint">Google Drive: Paylaş → Bağlantıya sahip herkes → linki yapıştırın</p>
+              <p class="url-hint">💡 Google Drive linki kullanırsanız kapak otomatik oluşturulur. Paylaş → Bağlantıya sahip herkes → linki yapıştırın</p>
+            </div>
+            <div class="field field--full">
+              <label for="inCoverUrl">Kapak Görseli URL <span class="field-optional">(isteğe bağlı)</span></label>
+              <input class="field-input" type="url" id="inCoverUrl" name="coverUrl"
+                placeholder="https://…/kapak.jpg — boş bırakırsanız otomatik oluşturulur" />
             </div>
             <div class="field field--full">
               <label for="inDesc">Açıklama</label>
@@ -175,6 +180,47 @@
         <button class="btn btn-ghost" id="deleteCancelBtn">Vazgeç</button>
         <button class="btn btn-danger" id="deleteConfirmBtn">Evet, Sil</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Dergi düzenleme modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal modal--wide">
+      <div class="modal-icon">✏️</div>
+      <h3>Dergiyi Düzenle</h3>
+      <form id="editForm" class="edit-form">
+        <input type="hidden" id="editId" />
+        <div class="field-grid">
+          <div class="field field--full">
+            <label for="editTitle">Başlık <span class="req">*</span></label>
+            <input class="field-input" type="text" id="editTitle" required maxlength="120" />
+          </div>
+          <div class="field">
+            <label for="editIssue">Sayı No</label>
+            <input class="field-input" type="number" id="editIssue" min="1" />
+          </div>
+          <div class="field">
+            <label for="editDate">Tarih</label>
+            <input class="field-input" type="date" id="editDate" />
+          </div>
+          <div class="field field--full">
+            <label for="editPdfUrl">PDF Bağlantısı</label>
+            <input class="field-input" type="url" id="editPdfUrl" />
+          </div>
+          <div class="field field--full">
+            <label for="editCoverUrl">Kapak URL <span class="field-optional">(isteğe bağlı)</span></label>
+            <input class="field-input" type="url" id="editCoverUrl" />
+          </div>
+          <div class="field field--full">
+            <label for="editDesc">Açıklama</label>
+            <textarea class="field-input field-textarea" id="editDesc" rows="3" maxlength="500"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="editCancelBtn">Vazgeç</button>
+          <button type="submit" class="btn btn-primary" id="editSaveBtn">💾 Kaydet</button>
+        </div>
+      </form>
     </div>
   </div>
 

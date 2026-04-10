@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
         : rawPdfUrl;
 
       // Kapak: manuel girilmişse onu kullan, yoksa Google Drive ise otomatik thumbnail
-      const autoCover = fileId ? `https://lh3.googleusercontent.com/d/${fileId}=w400` : null;
+      const autoCover = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` : null;
       const finalCoverUrl = coverUrl || autoCover || null;
 
       const magazine = {

@@ -279,6 +279,7 @@ body {
   letter-spacing: .05em;
 }
 .req { color: var(--accent); }
+.field-optional { font-size: .75em; color: var(--text-muted); font-weight: 400; }
 
 .field-input {
   padding: .6rem .85rem;
@@ -524,6 +525,15 @@ body {
   text-align: center;
   box-shadow: 0 24px 64px rgba(0,0,0,.22);
 }
+.modal--wide { max-width: 540px; text-align: left; }
+.modal--wide h3 { text-align: center; }
+.edit-form .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 1rem 0; }
+.edit-form .field--full { grid-column: 1 / -1; }
+.edit-form .field { display: flex; flex-direction: column; gap: .3rem; }
+.edit-form label { font-size: .82rem; color: var(--text-muted); font-weight: 500; }
+.edit-form .field-input { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: .55rem .75rem; font-size: .9rem; color: var(--text); width: 100%; box-sizing: border-box; }
+.edit-form .field-input:focus { outline: none; border-color: var(--accent); }
+.edit-form .field-textarea { resize: vertical; min-height: 80px; font-family: inherit; }
 .modal-icon { font-size: 2rem; margin-bottom: .75rem; }
 .modal h3   { font-family: var(--font-head); font-size: 1.2rem; margin-bottom: .5rem; }
 .modal p    { font-size: .85rem; color: var(--text-muted); margin-bottom: 1.25rem; }

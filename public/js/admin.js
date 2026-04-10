@@ -281,6 +281,7 @@ function renderList(magazines) {
       </div>
       <div class="mag-actions">
         <a href="/reader.html?id=${esc(mag.id)}" target="_blank" class="btn btn-outline" title="Önizle">👁</a>
+        <button class="btn btn-outline" onclick="openEditModal(${JSON.stringify(mag).replace(/"/g, '&quot;')})" title="Düzenle">✏️</button>
         ${canDelete ? `<button class="btn btn-outline" data-id="${esc(mag.id)}" data-title="${esc(mag.title)}" onclick="confirmDelete(this)" title="Sil">🗑</button>` : ''}
       </div>`;
     listEl.appendChild(item);
@@ -346,6 +347,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         date: document.getElementById('inDate').value || null,
         description: document.getElementById('inDesc').value.trim() || null,
         pdfUrl,
+        coverUrl: document.getElementById('inCoverUrl').value.trim() || null,
       }),
     });
 
@@ -509,6 +511,64 @@ function handleUnauthorized() {
   showLoginScreen();
   showToast('Oturum süresi doldu, tekrar giriş yapın.', 'error');
 }
+
+// ---- Dergi düzenleme ----
+function openEditModal(mag) {
+  document.getElementById('editId').value = mag.id;
+  document.getElementById('editTitle').value = mag.title || '';
+  document.getElementById('editIssue').value = mag.issue || '';
+  document.getElementById('editDate').value = mag.date ? mag.date.slice(0, 10) : '';
+  document.getElementById('editPdfUrl').value = mag.pdfUrl || '';
+  document.getElementById('editCoverUrl').value = mag.coverUrl || '';
+  document.getElementById('editDesc').value = mag.description || '';
+  document.getElementById('editModal').classList.add('open');
+}
+
+document.getElementById('editCancelBtn').addEventListener('click', () => {
+  document.getElementById('editModal').classList.remove('open');
+});
+
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Kaydediliyor…';
+
+  const body = {
+    title: document.getElementById('editTitle').value.trim(),
+    issue: document.getElementById('editIssue').value,
+    date:  document.getElementById('editDate').value,
+    pdfUrl: document.getElementById('editPdfUrl').value.trim(),
+    coverUrl: document.getElementById('editCoverUrl').value.trim(),
+    description: document.getElementById('editDesc').value.trim(),
+  };
+
+  if (!body.title) {
+    showToast('Başlık zorunludur.', 'error');
+    btn.disabled = false; btn.textContent = '💾 Kaydet'; return;
+  }
+
+  try {
+    const res = await fetch(`/api/magazines/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Güncelleme başarısız');
+    }
+    document.getElementById('editModal').classList.remove('open');
+    showToast('Dergi başarıyla güncellendi.', 'success');
+    loadMagazines();
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Kaydet';
+  }
+});
 
 // ---- Toast ----
 let toastTimer = null;
