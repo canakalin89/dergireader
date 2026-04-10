@@ -24,78 +24,81 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Yetkisiz erişim' });
     }
 
-    const form = formidable({ maxFileSize: 50 * 1024 * 1024 });
     let fields, files;
     try {
+      const form = formidable({ maxFileSize: 50 * 1024 * 1024 });
       [fields, files] = await form.parse(req);
     } catch (err) {
-      return res.status(400).json({ error: 'Form verisi okunamadı' });
+      return res.status(400).json({ error: 'Form verisi okunamadı: ' + err.message });
     }
 
-    const get = (v) => (Array.isArray(v) ? v[0] : v);
-    const title       = get(fields.title);
-    const issue       = get(fields.issue) ? parseInt(get(fields.issue)) : null;
-    const date        = get(fields.date) || null;
-    const description = (get(fields.description) || '').trim() || null;
+    try {
+      const get = (v) => (Array.isArray(v) ? v[0] : v);
+      const title       = get(fields.title);
+      const issue       = get(fields.issue) ? parseInt(get(fields.issue)) : null;
+      const date        = get(fields.date) || null;
+      const description = (get(fields.description) || '').trim() || null;
 
-    if (!title) {
-      return res.status(400).json({ error: 'Başlık zorunludur' });
-    }
-
-    const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
-    const coverFile = Array.isArray(files.cover) ? files.cover[0] : files.cover;
-    const pdfUrlField = get(fields.pdfUrl);
-
-    // PDF kaynağı: URL veya dosya
-    let pdfUrl = null;
-    if (pdfUrlField && pdfUrlField.trim()) {
-      // URL modu — doğrulama
-      try { new URL(pdfUrlField.trim()); } catch {
-        return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin' });
+      if (!title) {
+        return res.status(400).json({ error: 'Başlık zorunludur' });
       }
-      // Google Drive paylaşım linkini direkt indirme linkine çevir
-      const gDriveMatch = pdfUrlField.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      pdfUrl = gDriveMatch
-        ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
-        : pdfUrlField.trim();
-    } else if (pdfFile) {
-      if (!pdfFile.mimetype?.includes('pdf')) {
-        return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
+
+      const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
+      const coverFile = Array.isArray(files.cover) ? files.cover[0] : files.cover;
+      const pdfUrlField = get(fields.pdfUrl);
+
+      // PDF kaynağı: URL veya dosya
+      let pdfUrl = null;
+      if (pdfUrlField && pdfUrlField.trim()) {
+        try { new URL(pdfUrlField.trim()); } catch {
+          return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin' });
+        }
+        const gDriveMatch = pdfUrlField.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        pdfUrl = gDriveMatch
+          ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
+          : pdfUrlField.trim();
+      } else if (pdfFile) {
+        if (!pdfFile.mimetype?.includes('pdf')) {
+          return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
+        }
+        const pdfBuffer = fs.readFileSync(pdfFile.filepath);
+        pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
+      } else {
+        return res.status(400).json({ error: 'PDF dosyası veya URL zorunludur' });
       }
-      const pdfBuffer = fs.readFileSync(pdfFile.filepath);
-      pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
-    } else {
-      return res.status(400).json({ error: 'PDF dosyası veya URL zorunludur' });
-    }
 
-    let coverUrl = null;
-    if (coverFile) {
-      const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-      if (!allowed.includes(coverFile.mimetype)) {
-        return res.status(400).json({ error: 'Kapak için sadece JPG, PNG veya WebP kabul edilir' });
+      let coverUrl = null;
+      if (coverFile) {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!allowed.includes(coverFile.mimetype)) {
+          return res.status(400).json({ error: 'Kapak için sadece JPG, PNG veya WebP kabul edilir' });
+        }
+        const ext = coverFile.originalFilename?.split('.').pop() || 'jpg';
+        const coverBuffer = fs.readFileSync(coverFile.filepath);
+        coverUrl = await uploadFile(coverBuffer, `covers/${uuidv4()}.${ext}`, coverFile.mimetype);
       }
-      const ext = coverFile.originalFilename?.split('.').pop() || 'jpg';
-      const coverBuffer = fs.readFileSync(coverFile.filepath);
-      coverUrl = await uploadFile(coverBuffer, `covers/${uuidv4()}.${ext}`, coverFile.mimetype);
+
+      const magazine = {
+        id: uuidv4(),
+        title,
+        issue,
+        date,
+        description,
+        publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
+        pdfUrl,
+        coverUrl,
+        views: 0,
+      };
+
+      const magazines = await getMagazines();
+      magazines.push(magazine);
+      await saveMagazines(magazines);
+
+      return res.status(201).json(magazine);
+    } catch (err) {
+      console.error('Magazine upload error:', err);
+      return res.status(500).json({ error: 'Yükleme sırasında hata: ' + err.message });
     }
-
-    const magazine = {
-      id: uuidv4(),
-      title,
-      issue,
-      date,
-      description,
-      publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
-      pdfUrl,
-      coverUrl,
-      views: 0,
-    };
-
-    const magazines = await getMagazines();
-    magazines.push(magazine);
-    await saveMagazines(magazines);
-
-    return res.status(201).json(magazine);
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
