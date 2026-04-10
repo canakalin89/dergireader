@@ -9,6 +9,18 @@ let allCategories = [];
 let newestMagId  = null;
 let activeCategoryId = null;
 
+// Kapak yüklenemezse stilize kapağa geri dön
+var drFallbacks = {};
+function drCoverFallback(img) {
+  var mid = img.getAttribute('data-mid');
+  var cover = img.closest('.card-cover');
+  if (cover && drFallbacks[mid]) {
+    // badge varsa koru
+    var badge = cover.querySelector('.badge-new');
+    cover.innerHTML = drFallbacks[mid] + (badge ? badge.outerHTML : '');
+  }
+}
+
 // ---- Tema ----
 const html = document.documentElement;
 const themeToggle = document.getElementById('themeToggle');
@@ -173,22 +185,26 @@ function renderGallery(magazines) {
     var issueStr = mag.issue ? 'Sayı ' + mag.issue : '';
     var pal = PALETTES[idx % PALETTES.length];
 
-    // Kapak: coverUrl (harici resim) varsa onu göster, yoksa stilize kapak
+    // Kapak: coverUrl varsa dene (Drive thumbnail dahil), yüklenemezse stilize kapağa dön
+    var styledCover =
+      '<div class="cover-styled" style="background:' + pal.bg + '">' +
+        '<div class="cover-deco" style="border-color:' + pal.ac + '"></div>' +
+        '<div class="cover-body">' +
+          '<span class="cover-icon">📖</span>' +
+          '<span class="cover-title">' + escHtml(mag.title) + '</span>' +
+          (issueStr ? '<span class="cover-issue" style="border-color:' + pal.ac + '">' + escHtml(issueStr) + '</span>' : '') +
+          (magYear  ? '<span class="cover-year">' + escHtml(magYear) + '</span>' : '') +
+        '</div>' +
+        '<div class="cover-stripe" style="background:' + pal.ac + '"></div>' +
+      '</div>';
     var inner;
-    if (mag.coverUrl && !mag.coverUrl.includes('drive.google.com/thumbnail')) {
-      inner = '<img src="' + escHtml(mag.coverUrl) + '" alt="' + escHtml(mag.title) + '" loading="lazy">';
+    if (mag.coverUrl) {
+      inner = '<img src="' + escHtml(mag.coverUrl) + '" alt="' + escHtml(mag.title) + '" loading="lazy"' +
+        ' data-mid="' + escHtml(mag.id) + '"' +
+        ' onerror="drCoverFallback(this)">';
+      drFallbacks[mag.id] = styledCover;
     } else {
-      inner =
-        '<div class="cover-styled" style="background:' + pal.bg + '">' +
-          '<div class="cover-deco" style="border-color:' + pal.ac + '"></div>' +
-          '<div class="cover-body">' +
-            '<span class="cover-icon">📖</span>' +
-            '<span class="cover-title">' + escHtml(mag.title) + '</span>' +
-            (issueStr ? '<span class="cover-issue" style="border-color:' + pal.ac + '">' + escHtml(issueStr) + '</span>' : '') +
-            (magYear  ? '<span class="cover-year">' + escHtml(magYear) + '</span>' : '') +
-          '</div>' +
-          '<div class="cover-stripe" style="background:' + pal.ac + '"></div>' +
-        '</div>';
+      inner = styledCover;
     }
 
     var meta = [];
