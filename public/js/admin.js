@@ -297,6 +297,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
   btn.disabled = true;
   btn.textContent = 'Kaydediliyor…';
+  btn.classList.add('is-loading');
+  showLoading('Dergi kaydediliyor…');
 
   try {
     const res = await fetch('/api/magazines', {
@@ -321,7 +323,9 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   } catch (err) {
     showToast('Hata: ' + err.message, 'error');
   } finally {
+    hideLoading();
     btn.disabled = false;
+    btn.classList.remove('is-loading');
     btn.textContent = '💾 Kaydet';
   }
 });
@@ -360,6 +364,8 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
   const btn = document.getElementById('deleteConfirmBtn');
   btn.disabled = true;
   btn.textContent = 'Siliniyor…';
+  btn.classList.add('is-loading');
+  showLoading('Siliniyor…');
 
   try {
     if (deleteState.mode === 'user') {
@@ -369,6 +375,7 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       });
       if (!res.ok) throw new Error(await parseApiError(res, 'Silinemedi'));
       showToast('Kullanıcı kaldırıldı.', 'success');
+      hideLoading();
       closeDeleteModal();
       loadUsers();
       return;
@@ -380,16 +387,19 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: '{}',
     });
-    if (res.status === 401 || res.status === 403) { handleUnauthorized(); closeDeleteModal(); return; }
+    if (res.status === 401 || res.status === 403) { hideLoading(); handleUnauthorized(); closeDeleteModal(); return; }
     if (!res.ok) throw new Error(await parseApiError(res, 'Silme başarısız'));
 
     showToast('Dergi başarıyla silindi.', 'success');
+    hideLoading();
     closeDeleteModal();
     await loadMagazines();
   } catch (err) {
+    hideLoading();
     const prefix = deleteState.mode === 'user' ? 'Kullanıcı silinirken hata: ' : 'Silme sırasında hata: ';
     showToast(prefix + err.message, 'error');
     btn.disabled = false;
+    btn.classList.remove('is-loading');
     btn.textContent = 'Evet, Sil';
     deleteState.busy = false;
   }
@@ -420,6 +430,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true;
   btn.textContent = 'Kaydediliyor…';
+  btn.classList.add('is-loading');
 
   const body = {
     title: document.getElementById('editTitle').value.trim(),
@@ -432,9 +443,11 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
 
   if (!body.title) {
     showToast('Başlık zorunludur.', 'error');
-    btn.disabled = false; btn.textContent = '💾 Kaydet';
+    btn.disabled = false; btn.classList.remove('is-loading'); btn.textContent = '💾 Kaydet';
     return;
   }
+
+  showLoading('Dergi güncelleniyor…');
 
   try {
     const res = await fetch(`/api/magazines/${encodeURIComponent(id)}?action=update`, {
@@ -442,7 +455,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
-    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
+    if (res.status === 401 || res.status === 403) { hideLoading(); handleUnauthorized(); return; }
     if (!res.ok) throw new Error(await parseApiError(res, 'Güncelleme başarısız'));
 
     document.getElementById('editModal').classList.remove('open');
@@ -451,7 +464,9 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
   } catch (err) {
     showToast('Hata: ' + err.message, 'error');
   } finally {
+    hideLoading();
     btn.disabled = false;
+    btn.classList.remove('is-loading');
     btn.textContent = '💾 Kaydet';
   }
 });
@@ -557,7 +572,18 @@ function showToast(msg, type = 'success') {
   toast.textContent = msg;
   toast.className = `toast ${type} show`;
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 4000);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 4500);
+}
+
+// ── Loading Overlay ─────────────────────────────────────────────────────────
+function showLoading(msg) {
+  var overlay = document.getElementById('loadingOverlay');
+  var msgEl = document.getElementById('loadingMsg');
+  msgEl.textContent = msg || 'İşlem yapılıyor…';
+  overlay.classList.add('active');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('active');
 }
 
 // ── Yardımcı ────────────────────────────────────────────────────────────────
