@@ -363,6 +363,64 @@ function setupDropZone(zoneId, inputId, chosenId) {
   });
 }
 
+// ---- Vercel Blob direkt yükleme ----
+async function uploadFileToBlob(file, prefix, onProgress) {
+  const limitMB = file.type === 'application/pdf' ? 50 : 10;
+  if (file.size > limitMB * 1024 * 1024) {
+    throw new Error(`Dosya çok büyük: ${(file.size / 1024 / 1024).toFixed(1)} MB — maksimum ${limitMB} MB`);
+  }
+  const ext = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+  const pathname = `${prefix}/${Date.now()}.${ext}`;
+
+  // 1. Sunucudan yükleme izni al
+  onProgress?.(5, 'İzin alınıyor…');
+  const tokenRes = await fetch('/api/blob-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+    body: JSON.stringify({
+      type: 'blob.generate-client-token',
+      payload: { pathname, callbackUrl: `${location.origin}/api/blob-upload` },
+    }),
+  });
+  if (!tokenRes.ok) {
+    const err = await tokenRes.json().catch(() => ({}));
+    throw new Error(err.error || `Yükleme izni alınamadı (${tokenRes.status})`);
+  }
+  const { clientToken } = await tokenRes.json();
+
+  // 2. Dosyayı doğrudan Vercel Blob'a yükle (fonksiyonu bypass eder)
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', `https://blob.vercel-storage.com/${pathname}`);
+    xhr.setRequestHeader('authorization', `Bearer ${clientToken}`);
+    xhr.setRequestHeader('x-api-version', '7');
+    xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream');
+    xhr.setRequestHeader('x-add-random-suffix', '1');
+    xhr.setRequestHeader('x-cache-control-max-age', '31536000');
+
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable && onProgress) {
+        onProgress(Math.round(10 + (ev.loaded / ev.total) * 85), `Yükleniyor… ${Math.round(ev.loaded / ev.total * 100)}%`);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText).url); }
+        catch { reject(new Error('Vercel Blob yanıtı okunamadı')); }
+      } else {
+        const msg = xhr.status === 413
+          ? `Dosya çok büyük — Vercel limiti aşıldı (${(file.size / 1024 / 1024).toFixed(1)} MB)`
+          : xhr.status === 401 ? 'Yükleme yetkisi geçersiz'
+          : `Dosya yüklenemedi (${xhr.status})`;
+        reject(new Error(msg));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Ağ hatası — internet bağlantısını kontrol edin'));
+    xhr.send(file);
+  });
+}
+
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('submitBtn');
@@ -370,51 +428,80 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   const progressFill = document.getElementById('progressFill');
   const progressLabel = document.getElementById('progressLabel');
 
+  const setProgress = (pct, label) => {
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = label;
+  };
+
+  // --- Dosya boyutu ve tip kontrolü (ağ isteği göndermeden önce) ---
+  const pdfFile = document.getElementById('inPdf').files[0];
+  const coverFile = document.getElementById('inCover').files[0];
+
+  if (pdfSource === 'upload') {
+    if (!pdfFile) { showToast('PDF dosyası seçmediniz', 'error'); return; }
+    if (pdfFile.size > 50 * 1024 * 1024) {
+      showToast(`PDF çok büyük: ${(pdfFile.size / 1024 / 1024).toFixed(1)} MB — maksimum 50 MB`, 'error'); return;
+    }
+    if (!pdfFile.name.toLowerCase().endsWith('.pdf') && pdfFile.type !== 'application/pdf') {
+      showToast('Sadece PDF dosyası yüklenebilir', 'error'); return;
+    }
+  } else {
+    const urlVal = document.getElementById('inPdfUrl').value.trim();
+    if (!urlVal) { showToast('Lütfen bir PDF URL\'si girin', 'error'); return; }
+    try { new URL(urlVal); } catch { showToast('Geçerli bir URL girin (https:// ile başlamalı)', 'error'); return; }
+  }
+
+  if (coverFile) {
+    if (coverFile.size > 10 * 1024 * 1024) {
+      showToast(`Kapak resmi çok büyük: ${(coverFile.size / 1024 / 1024).toFixed(1)} MB — maksimum 10 MB`, 'error'); return;
+    }
+    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(coverFile.type)) {
+      showToast('Kapak için sadece JPG, PNG veya WebP kabul edilir', 'error'); return;
+    }
+  }
+
   btn.disabled = true;
   btn.textContent = 'Yükleniyor…';
   progressWrap.style.display = 'block';
-
-  const formData = new FormData(e.target);
-
-  // URL modunda: dosya alanını temizle, pdfUrl'u ekle
-  if (pdfSource === 'url') {
-    formData.delete('pdf');
-    const urlVal = document.getElementById('inPdfUrl').value.trim();
-    if (!urlVal) {
-      showToast('Lütfen bir PDF URL\'si girin.', 'error');
-      btn.disabled = false; btn.textContent = '📤 Dergiyi Yükle';
-      progressWrap.style.display = 'none';
-      return;
-    }
-    formData.set('pdfUrl', urlVal);
-  }
+  setProgress(0, 'Hazırlanıyor…');
 
   try {
-    await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/magazines');
-      xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+    let pdfUrl, coverUrl = null;
 
-      xhr.upload.onprogress = (ev) => {
-        if (ev.lengthComputable) {
-          const pct = Math.round((ev.loaded / ev.total) * 100);
-          progressFill.style.width = pct + '%';
-          progressLabel.textContent = `Yükleniyor… ${pct}%`;
-        }
-      };
+    if (pdfSource === 'url') {
+      pdfUrl = document.getElementById('inPdfUrl').value.trim();
+      setProgress(50, 'URL kaydediliyor…');
+    } else {
+      setProgress(0, 'PDF yükleniyor…');
+      pdfUrl = await uploadFileToBlob(pdfFile, 'pdfs', (pct, label) => setProgress(pct * 0.75, 'PDF: ' + label));
+    }
 
-      xhr.onload = () => {
-        if (xhr.status === 401 || xhr.status === 403) { handleUnauthorized(); reject(new Error('Yetkisiz')); return; }
-        if (xhr.status === 201) resolve(JSON.parse(xhr.responseText));
-        else {
-          try { reject(new Error(JSON.parse(xhr.responseText).error || 'Yükleme başarısız')); }
-          catch { reject(new Error('Sunucu hatası')); }
-        }
-      };
-      xhr.onerror = () => reject(new Error('Ağ hatası'));
-      xhr.send(formData);
+    if (coverFile) {
+      setProgress(78, 'Kapak yükleniyor…');
+      coverUrl = await uploadFileToBlob(coverFile, 'covers', (pct, label) => setProgress(78 + pct * 0.15, 'Kapak: ' + label));
+    }
+
+    setProgress(95, 'Bilgiler kaydediliyor…');
+    const res = await fetch('/api/magazines', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({
+        title: document.getElementById('inTitle').value.trim(),
+        issue: document.getElementById('inIssue').value.trim() || null,
+        date: document.getElementById('inDate').value || null,
+        description: document.getElementById('inDesc').value.trim() || null,
+        pdfUrl,
+        coverUrl,
+      }),
     });
 
+    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Kayıt hatası (${res.status})`);
+    }
+
+    setProgress(100, 'Tamamlandı!');
     showToast('Dergi başarıyla yüklendi!', 'success');
     e.target.reset();
     document.getElementById('pdfChosen').textContent = '';

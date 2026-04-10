@@ -1,8 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { verifyAdmin, verifyRole } = require('../_lib/auth');
-const { getMagazines, saveMagazines, uploadFile } = require('../_lib/store');
-const formidable = require('formidable');
-const fs = require('fs');
+const { getMagazines, saveMagazines } = require('../_lib/store');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -24,69 +22,44 @@ module.exports = async function handler(req, res) {
       return res.status(401).json({ error: 'Yetkisiz erişim' });
     }
 
-    let fields, files;
+    let body;
     try {
-      const form = formidable({ maxFileSize: 50 * 1024 * 1024 });
-      [fields, files] = await form.parse(req);
-    } catch (err) {
-      return res.status(400).json({ error: 'Form verisi okunamadı: ' + err.message });
+      let raw = '';
+      for await (const chunk of req) raw += chunk;
+      body = JSON.parse(raw);
+    } catch {
+      return res.status(400).json({ error: 'Geçersiz istek — JSON bekleniyordu' });
     }
 
     try {
-      const get = (v) => (Array.isArray(v) ? v[0] : v);
-      const title       = get(fields.title);
-      const issue       = get(fields.issue) ? parseInt(get(fields.issue)) : null;
-      const date        = get(fields.date) || null;
-      const description = (get(fields.description) || '').trim() || null;
+      const { title, issue, date, description, pdfUrl: rawPdfUrl, coverUrl } = body;
 
-      if (!title) {
+      if (!title || !String(title).trim()) {
         return res.status(400).json({ error: 'Başlık zorunludur' });
       }
-
-      const pdfFile = Array.isArray(files.pdf) ? files.pdf[0] : files.pdf;
-      const coverFile = Array.isArray(files.cover) ? files.cover[0] : files.cover;
-      const pdfUrlField = get(fields.pdfUrl);
-
-      // PDF kaynağı: URL veya dosya
-      let pdfUrl = null;
-      if (pdfUrlField && pdfUrlField.trim()) {
-        try { new URL(pdfUrlField.trim()); } catch {
-          return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin' });
-        }
-        const gDriveMatch = pdfUrlField.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        pdfUrl = gDriveMatch
-          ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
-          : pdfUrlField.trim();
-      } else if (pdfFile) {
-        if (!pdfFile.mimetype?.includes('pdf')) {
-          return res.status(400).json({ error: 'Sadece PDF dosyaları kabul edilir' });
-        }
-        const pdfBuffer = fs.readFileSync(pdfFile.filepath);
-        pdfUrl = await uploadFile(pdfBuffer, `pdfs/${uuidv4()}.pdf`, 'application/pdf');
-      } else {
+      if (!rawPdfUrl) {
         return res.status(400).json({ error: 'PDF dosyası veya URL zorunludur' });
       }
 
-      let coverUrl = null;
-      if (coverFile) {
-        const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-        if (!allowed.includes(coverFile.mimetype)) {
-          return res.status(400).json({ error: 'Kapak için sadece JPG, PNG veya WebP kabul edilir' });
-        }
-        const ext = coverFile.originalFilename?.split('.').pop() || 'jpg';
-        const coverBuffer = fs.readFileSync(coverFile.filepath);
-        coverUrl = await uploadFile(coverBuffer, `covers/${uuidv4()}.${ext}`, coverFile.mimetype);
+      try { new URL(rawPdfUrl); } catch {
+        return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin (https:// ile başlamalı)' });
       }
+
+      // Google Drive link dönüşümü
+      const gDriveMatch = rawPdfUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const pdfUrl = gDriveMatch
+        ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
+        : rawPdfUrl;
 
       const magazine = {
         id: uuidv4(),
-        title,
-        issue,
-        date,
-        description,
+        title: String(title).trim().slice(0, 120),
+        issue: issue ? parseInt(issue) || null : null,
+        date: date || null,
+        description: description ? String(description).trim().slice(0, 500) : null,
         publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
         pdfUrl,
-        coverUrl,
+        coverUrl: coverUrl || null,
         views: 0,
       };
 
@@ -96,12 +69,10 @@ module.exports = async function handler(req, res) {
 
       return res.status(201).json(magazine);
     } catch (err) {
-      console.error('Magazine upload error:', err);
-      return res.status(500).json({ error: 'Yükleme sırasında hata: ' + err.message });
+      console.error('[magazines POST] hata:', err);
+      return res.status(500).json({ error: 'Kayıt sırasında hata: ' + err.message });
     }
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
 };
-
-module.exports.config = { api: { bodyParser: false } };
