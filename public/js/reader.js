@@ -481,6 +481,8 @@ document.getElementById('navRight').addEventListener('click', function() {
 
   scene.addEventListener('touchstart', function(e) {
     if (e.touches.length !== 1) return;
+    // Don't interfere with PDF link/QR taps
+    if (e.target.closest && e.target.closest('.pdf-link-hit')) return;
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     tracking = true;
@@ -488,6 +490,8 @@ document.getElementById('navRight').addEventListener('click', function() {
 
   scene.addEventListener('touchend', function(e) {
     if (!tracking || !pageFlip) return;
+    // Don't interfere with PDF link/QR taps
+    if (e.target.closest && e.target.closest('.pdf-link-hit')) { tracking = false; return; }
     tracking = false;
     var dx = e.changedTouches[0].clientX - startX;
     var dy = e.changedTouches[0].clientY - startY;
