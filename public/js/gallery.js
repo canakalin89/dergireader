@@ -98,8 +98,8 @@ function renderGallery(magazines) {
     card.setAttribute('aria-label', `${mag.title} — Sayı ${mag.issue}`);
 
     const coverHtml = mag.coverUrl
-      ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak görseli" loading="lazy" />${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
-      : `<div class="card-cover"><canvas class="pdf-cover-canvas" data-pdf="${escHtml(mag.pdfUrl || '')}"></canvas>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`;
+      ? `<div class="card-cover"><img src="${escHtml(mag.coverUrl)}" alt="${escHtml(mag.title)} kapak" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="card-cover-placeholder" style="display:none">📄</div>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`
+      : `<div class="card-cover"><div class="card-cover-placeholder">📄</div>${isNew ? '<span class="badge-new">YENİ</span>' : ''}</div>`;
 
     const metaParts = [];
     if (mag.issue) metaParts.push(`<span>Sayı ${mag.issue}</span>`);

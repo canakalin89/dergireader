@@ -45,11 +45,16 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin (https:// ile başlamalı)' });
       }
 
-      // Google Drive link dönüşümü
-      const gDriveMatch = rawPdfUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      const pdfUrl = gDriveMatch
-        ? `https://drive.google.com/uc?export=download&id=${gDriveMatch[1]}`
+      // Google Drive link dönüşümü + otomatik kapak
+      const gDriveMatch = rawPdfUrl.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
+      const fileId = gDriveMatch?.[1] || null;
+      const pdfUrl = fileId
+        ? `https://drive.google.com/uc?export=download&id=${fileId}`
         : rawPdfUrl;
+
+      // Kapak: manuel girilmişse onu kullan, yoksa Google Drive ise otomatik thumbnail
+      const autoCover = fileId ? `https://lh3.googleusercontent.com/d/${fileId}=w400` : null;
+      const finalCoverUrl = coverUrl || autoCover || null;
 
       const magazine = {
         id: uuidv4(),
@@ -59,7 +64,7 @@ module.exports = async function handler(req, res) {
         description: description ? String(description).trim().slice(0, 500) : null,
         publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
         pdfUrl,
-        coverUrl: coverUrl || null,
+        coverUrl: finalCoverUrl,
         views: 0,
       };
 
