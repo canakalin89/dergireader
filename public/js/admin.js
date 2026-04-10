@@ -2,6 +2,18 @@
    admin.js — Dergi Yönetim Paneli
    ============================================ */
 
+// ---- API hata ayrıştırıcı ----
+// Sunucudan gelen { code, message } formatını toast'a çevirir.
+async function parseApiError(res, fallback) {
+  try {
+    const data = await res.json();
+    if (data.code && data.message) return `[${data.code}] ${data.message}`;
+    if (data.message) return data.message;
+    if (data.error)   return data.error;
+  } catch { /* ignore */ }
+  return fallback || 'Bilinmeyen hata';
+}
+
 // ---- PDF Otomatik Kapak ----
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
@@ -224,7 +236,10 @@ document.getElementById('emailAuthForm').addEventListener('submit', async (e) =>
       body,
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'İşlem başarısız');
+    if (!res.ok) {
+      const msg = (data.code && data.message) ? `[${data.code}] ${data.message}` : (data.message || data.error || 'İşlem başarısız');
+      throw new Error(msg);
+    }
     saveToken(data.token);
     currentUser = parseJWT(data.token);
     showAdminContent();
@@ -302,26 +317,6 @@ document.getElementById('deleteCancelBtn').addEventListener('click', () => {
   document.getElementById('deleteModal').classList.remove('open');
 });
 
-document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
-  if (!pendingDeleteId) return;
-  const id = pendingDeleteId;
-  pendingDeleteId = null;
-  document.getElementById('deleteModal').classList.remove('open');
-
-  try {
-    const res = await fetch(`/api/magazines/${id}`, {
-      method: 'DELETE',
-      headers: authHeaders(),
-    });
-    if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
-    if (!res.ok) throw new Error('Silme başarısız');
-    showToast('Dergi başarıyla silindi.', 'success');
-    loadMagazines();
-  } catch (err) {
-    showToast('Silme sırasında hata: ' + err.message, 'error');
-  }
-});
-
 // ---- Yükleme formu ----
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -353,8 +348,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
     if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Kayıt hatası (${res.status})`);
+      const msg = await parseApiError(res, `Kayıt hatası (${res.status})`);
+      throw new Error(msg);
     }
 
     showToast('Dergi başarıyla eklendi!', 'success');
@@ -441,8 +436,8 @@ async function changeRole(select) {
       body: JSON.stringify({ role }),
     });
     if (!res.ok) {
-      const d = await res.json();
-      throw new Error(d.error || 'Rol güncellenemedi');
+      const msg = await parseApiError(res, 'Rol güncellenemedi');
+      throw new Error(msg);
     }
     showToast(`Rol "${role}" olarak güncellendi.`, 'success');
   } catch (err) {
@@ -476,7 +471,10 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
         method: 'DELETE',
         headers: authHeaders(),
       });
-      if (!res.ok) throw new Error('Silinemedi');
+      if (!res.ok) {
+        const msg = await parseApiError(res, 'Silinemedi');
+        throw new Error(msg);
+      }
       showToast('Kullanıcı kaldırıldı.', 'success');
       loadUsers();
     } catch (err) {
@@ -497,7 +495,10 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       headers: authHeaders(),
     });
     if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
-    if (!res.ok) throw new Error('Silme başarısız');
+    if (!res.ok) {
+      const msg = await parseApiError(res, 'Silme başarısız');
+      throw new Error(msg);
+    }
     showToast('Dergi başarıyla silindi.', 'success');
     loadMagazines();
   } catch (err) {
@@ -557,8 +558,8 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
     });
     if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Güncelleme başarısız');
+      const msg = await parseApiError(res, 'Güncelleme başarısız');
+      throw new Error(msg);
     }
     document.getElementById('editModal').classList.remove('open');
     showToast('Dergi başarıyla güncellendi.', 'success');
