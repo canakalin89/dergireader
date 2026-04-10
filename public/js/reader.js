@@ -284,6 +284,65 @@ async function renderPdfPage(pageNum) {
 
   container.innerHTML = '';
   container.appendChild(canvas);
+
+  // Annotation links overlay
+  try {
+    var annots = await page.getAnnotations({ intent: 'display' });
+    if (annots && annots.length) {
+      var linkLayer = document.createElement('div');
+      linkLayer.className = 'pdf-link-layer';
+      linkLayer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+
+      // Container, canvas'ın CSS boyutuna eşit (%100). 
+      // PDF rect orijinal koordinatlarda (bottom-left). Viewport scale ile çarpıp
+      // sonra container boyutuna oranlarız.
+      var pageHeight = vp.height / RENDER_SCALE;  // orijinal yükseklik
+      var pageWidth  = vp.width  / RENDER_SCALE;
+
+      annots.forEach(function(a) {
+        var url = null;
+        if (a.subtype === 'Link' && a.url) {
+          url = a.url;
+        } else if (a.subtype === 'Link' && a.unsafeUrl) {
+          url = a.unsafeUrl;
+        }
+        if (!url || !a.rect) return;
+
+        // rect: [x1, y1(bottom), x2, y2(top)] — bottom-left origin
+        // yüzde olarak hesapla (container boyutuna bağımsız)
+        var left   = (a.rect[0] / pageWidth * 100) + '%';
+        var top    = ((pageHeight - a.rect[3]) / pageHeight * 100) + '%';
+        var width  = ((a.rect[2] - a.rect[0]) / pageWidth * 100) + '%';
+        var height = ((a.rect[3] - a.rect[1]) / pageHeight * 100) + '%';
+
+        var link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'pdf-link-hit';
+        link.style.cssText =
+          'position:absolute;pointer-events:auto;cursor:pointer;' +
+          'left:' + left + ';top:' + top + ';' +
+          'width:' + width + ';height:' + height + ';' +
+          'background:rgba(59,130,246,.08);border-radius:2px;' +
+          'transition:background .2s;';
+        link.title = url.length > 60 ? url.substring(0, 57) + '…' : url;
+
+        link.addEventListener('mouseenter', function() { this.style.background = 'rgba(59,130,246,.2)'; });
+        link.addEventListener('mouseleave', function() { this.style.background = 'rgba(59,130,246,.08)'; });
+        link.addEventListener('click', function(ev) {
+          ev.stopPropagation();  // Don't trigger page flip
+        });
+
+        linkLayer.appendChild(link);
+      });
+
+      if (linkLayer.children.length) {
+        container.style.position = 'relative';
+        container.appendChild(linkLayer);
+      }
+    }
+  } catch(e) { /* annotation extraction failed — ignore */ }
 }
 
 // ── Navigation ──
