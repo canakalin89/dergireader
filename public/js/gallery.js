@@ -140,34 +140,32 @@ function initPdfCovers() {
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc)
     pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
 
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const canvas = entry.target;
-      observer.unobserve(canvas);
-      renderPdfFirstPage(canvas, canvas.dataset.pdf);
-    });
-  }, { rootMargin: '600px' });
-  canvases.forEach(c => observer.observe(c));
+  // Az sayıda dergi — hepsini hemen render et
+  canvases.forEach(c => renderPdfFirstPage(c, c.dataset.pdf));
 }
 
 async function renderPdfFirstPage(canvas, url) {
   if (!url || canvas.dataset.rendered) return;
   canvas.dataset.rendered = '1';
+  var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
   try {
-    const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
-    const page = await pdf.getPage(1);
-    const vp0 = page.getViewport({ scale: 1 });
-    const scale = 400 / vp0.width;
-    const vp = page.getViewport({ scale });
+    var pdf = await pdfjsLib.getDocument({
+      url: url,
+      disableRange: true,
+      disableStream: true,
+      withCredentials: false
+    }).promise;
+    var page = await pdf.getPage(1);
+    var vp0 = page.getViewport({ scale: 1 });
+    var scale = 400 / vp0.width;
+    var vp = page.getViewport({ scale: scale });
     canvas.width = vp.width;
     canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    // Placeholder'ı gizle — canvas zaten görünür
-    var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
     if (ph) ph.style.display = 'none';
   } catch (e) {
-    console.warn('[Cover] PDF render hatası:', e);
+    console.warn('[Cover] PDF kapak render hatası:', url, e);
+    canvas.style.display = 'none';
   }
 }
 
