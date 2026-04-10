@@ -54,6 +54,8 @@ const TOKEN_KEY = 'dr_admin_token';
 let authToken = localStorage.getItem(TOKEN_KEY);
 let currentUser = null;
 let pendingDeleteId = null;
+let pendingDeleteUserId = null;
+let deleteInFlight = false;
 
 // ---- Auth ----
 function isLoggedIn() { return !!authToken; }
@@ -85,6 +87,19 @@ function hasRole(minRole) {
   if (!currentUser) return false;
   const levels = { owner: 3, admin: 2, editor: 1, pending: 0 };
   return (levels[currentUser.role] || 0) >= (levels[minRole] || 0);
+}
+
+function resetDeleteState() {
+  pendingDeleteId = null;
+  pendingDeleteUserId = null;
+  document.getElementById('deleteModal').dataset.mode = '';
+}
+
+function setDeleteBusy(isBusy) {
+  deleteInFlight = isBusy;
+  const btn = document.getElementById('deleteConfirmBtn');
+  btn.disabled = isBusy;
+  btn.textContent = isBusy ? 'Siliniyor…' : 'Evet, Sil';
 }
 
 // ---- URL'den token oku (Google callback) ----
@@ -306,14 +321,17 @@ function renderList(magazines) {
 
 // ---- Silme onayı ----
 function confirmDelete(btn) {
+  resetDeleteState();
   pendingDeleteId = btn.dataset.id;
+  document.getElementById('deleteModal').dataset.mode = 'magazine';
   document.getElementById('deleteModalMsg').textContent =
     `"${btn.dataset.title}" dergisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`;
   document.getElementById('deleteModal').classList.add('open');
 }
 
 document.getElementById('deleteCancelBtn').addEventListener('click', () => {
-  pendingDeleteId = null;
+  if (deleteInFlight) return;
+  resetDeleteState();
   document.getElementById('deleteModal').classList.remove('open');
 });
 
@@ -446,8 +464,8 @@ async function changeRole(select) {
   }
 }
 
-let pendingDeleteUserId = null;
 function confirmDeleteUser(btn) {
+  resetDeleteState();
   pendingDeleteUserId = btn.dataset.userid;
   // Silme modalını yeniden kullan
   document.getElementById('deleteModalMsg').textContent =
@@ -457,17 +475,21 @@ function confirmDeleteUser(btn) {
 }
 
 document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
-  const modal = document.getElementById('deleteModal');
-  const mode = modal.dataset.mode;
+  if (deleteInFlight) return;
 
-  if (mode === 'user') {
-    modal.dataset.mode = '';
-    modal.classList.remove('open');
-    if (!pendingDeleteUserId) return;
-    const id = pendingDeleteUserId;
-    pendingDeleteUserId = null;
-    try {
-      const res = await fetch(`/api/users/${encodeURIComponent(id)}`, {
+  const modal = document.getElementById('deleteModal');
+  const mode = modal.dataset.mode || 'magazine';
+  const userId = pendingDeleteUserId;
+  const magazineId = pendingDeleteId;
+
+  setDeleteBusy(true);
+  modal.classList.remove('open');
+  resetDeleteState();
+
+  try {
+    if (mode === 'user') {
+      if (!userId) return;
+      const res = await fetch(`/api/users/${encodeURIComponent(userId)}`, {
         method: 'DELETE',
         headers: authHeaders(),
       });
@@ -477,20 +499,11 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       }
       showToast('Kullanıcı kaldırıldı.', 'success');
       loadUsers();
-    } catch (err) {
-      showToast('Hata: ' + err.message, 'error');
+      return;
     }
-    return;
-  }
 
-  // Dergi silme (mevcut akış)
-  if (!pendingDeleteId) return;
-  const id = pendingDeleteId;
-  pendingDeleteId = null;
-  modal.classList.remove('open');
-
-  try {
-    const res = await fetch(`/api/magazines/${id}`, {
+    if (!magazineId) return;
+    const res = await fetch(`/api/magazines/${encodeURIComponent(magazineId)}`, {
       method: 'DELETE',
       headers: authHeaders(),
     });
@@ -502,7 +515,10 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
     showToast('Dergi başarıyla silindi.', 'success');
     loadMagazines();
   } catch (err) {
-    showToast('Silme sırasında hata: ' + err.message, 'error');
+    const prefix = mode === 'user' ? 'Kullanıcı silinirken hata: ' : 'Silme sırasında hata: ';
+    showToast(prefix + err.message, 'error');
+  } finally {
+    setDeleteBusy(false);
   }
 });
 
