@@ -104,13 +104,10 @@ function renderGallery(magazines) {
     card.href = `/reader.html?id=${encodeURIComponent(mag.id)}`;
     card.setAttribute('aria-label', `${mag.title} — Sayı ${mag.issue}`);
 
-    // coverUrl yoksa pdfUrl'den Drive thumbnail üret
-    var coverSrc = mag.coverUrl || driveThumbnail(mag.pdfUrl);
     var badgeHtml = isNew ? '<span class="badge-new">YENİ</span>' : '';
-
-    const coverHtml = coverSrc
-      ? `<div class="card-cover"><img src="${escHtml(coverSrc)}" alt="${escHtml(mag.title)} kapak" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" /><div class="card-cover-placeholder" style="display:none">📄</div>${badgeHtml}</div>`
-      : `<div class="card-cover"><div class="card-cover-placeholder">📄</div>${badgeHtml}</div>`;
+    // PDF proxy üzerinden ilk sayfayı canvas'a render et
+    var proxyUrl = '/api/pdf-proxy?url=' + encodeURIComponent(mag.pdfUrl);
+    const coverHtml = `<div class="card-cover"><canvas class="pdf-cover-canvas" data-pdf="${escHtml(proxyUrl)}"></canvas><div class="card-cover-placeholder">📄</div>${badgeHtml}</div>`;
 
     const metaParts = [];
     if (mag.issue) metaParts.push(`<span>Sayı ${mag.issue}</span>`);
@@ -150,7 +147,7 @@ function initPdfCovers() {
       observer.unobserve(canvas);
       renderPdfFirstPage(canvas, canvas.dataset.pdf);
     });
-  }, { rootMargin: '400px' });
+  }, { rootMargin: '600px' });
   canvases.forEach(c => observer.observe(c));
 }
 
@@ -161,11 +158,15 @@ async function renderPdfFirstPage(canvas, url) {
     const pdf = await pdfjsLib.getDocument({ url, withCredentials: false }).promise;
     const page = await pdf.getPage(1);
     const vp0 = page.getViewport({ scale: 1 });
-    const scale = 300 / vp0.width;
+    const scale = 400 / vp0.width;
     const vp = page.getViewport({ scale });
     canvas.width = vp.width;
     canvas.height = vp.height;
     await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    canvas.style.display = 'block';
+    // Placeholder'ı gizle
+    var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
+    if (ph) ph.style.display = 'none';
   } catch {
     canvas.style.display = 'none';
   }
@@ -190,12 +191,6 @@ document.getElementById('filterReset').addEventListener('click', () => {
 // ---- Yardımcı ----
 function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function driveThumbnail(url) {
-  if (!url) return null;
-  var m = url.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
-  return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400' : null;
 }
 
 // Başlat
