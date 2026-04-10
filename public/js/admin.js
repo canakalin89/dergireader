@@ -160,36 +160,6 @@ function showAdminContent() {
   loadMagazines();
 }
 
-// ---- Login formu ----
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const password = document.getElementById('passwordInput').value;
-  const btn = document.getElementById('loginBtn');
-  const errEl = document.getElementById('loginError');
-  errEl.style.display = 'none';
-  btn.disabled = true;
-  btn.textContent = 'Giriş yapılıyor…';
-
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Giriş başarısız');
-    saveToken(data.token);
-    currentUser = parseJWT(data.token);
-    showAdminContent();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Giriş Yap';
-  }
-});
-
 // ---- Çıkış ----
 document.getElementById('btnLogout').addEventListener('click', () => {
   clearToken();
@@ -203,9 +173,12 @@ let authMode = 'login'; // 'login' | 'register'
 function setAuthMode(mode) {
   authMode = mode;
   const isReg = mode === 'register';
-  document.getElementById('fieldName').style.display   = isReg ? '' : 'none';
-  document.getElementById('inputName').required        = isReg;
-  document.getElementById('emailAuthBtn').textContent  = isReg ? 'Kayıt Ol' : 'Giriş Yap';
+  document.getElementById('fieldName').style.display              = isReg ? '' : 'none';
+  document.getElementById('inputName').required                   = isReg;
+  document.getElementById('fieldConfirmPassword').style.display   = isReg ? '' : 'none';
+  document.getElementById('inputConfirmPassword').required        = isReg;
+  document.getElementById('inputPassword').autocomplete           = isReg ? 'new-password' : 'current-password';
+  document.getElementById('emailAuthBtn').textContent             = isReg ? 'Kayıt Ol' : 'Giriş Yap';
   document.getElementById('tabLogin').classList.toggle('auth-tab--active',    !isReg);
   document.getElementById('tabRegister').classList.toggle('auth-tab--active',  isReg);
   document.getElementById('loginError').style.display = 'none';
@@ -215,18 +188,36 @@ document.getElementById('emailAuthForm').addEventListener('submit', async (e) =>
   e.preventDefault();
   const email    = document.getElementById('inputEmail').value.trim();
   const password = document.getElementById('inputPassword').value;
+  const confirm  = document.getElementById('inputConfirmPassword').value;
   const name     = document.getElementById('inputName').value.trim();
+  const hp       = document.getElementById('hpField').value; // honeypot
   const btn      = document.getElementById('emailAuthBtn');
   const errEl    = document.getElementById('loginError');
   errEl.style.display = 'none';
+
+  // Honeypot doluysa bot — sessizce engelle
+  if (hp) return;
+
+  // Kayıt modunda şifre doğrulama
+  if (authMode === 'register' && password !== confirm) {
+    errEl.textContent = 'Şifreler eşleşmiyor';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (authMode === 'register' && password.length < 6) {
+    errEl.textContent = 'Şifre en az 6 karakter olmalıdır';
+    errEl.style.display = 'block';
+    return;
+  }
+
   btn.disabled = true;
   btn.textContent = authMode === 'register' ? 'Kaydediliyor…' : 'Giriş yapılıyor…';
 
   try {
     const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login-email';
     const body = authMode === 'register'
-      ? JSON.stringify({ name, email, password })
-      : JSON.stringify({ email, password });
+      ? JSON.stringify({ name, email, password, _hp: hp })
+      : JSON.stringify({ email, password, _hp: hp });
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
