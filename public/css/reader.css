@@ -56,6 +56,14 @@ body {
 }
 .btn-back:hover { background: rgba(255,255,255,.08); color: #fff; }
 
+.loader-back {
+  margin-top: 18px;
+  opacity: .7;
+  font-size: 13px;
+  transition: opacity .2s;
+}
+.loader-back:hover { opacity: 1; }
+
 .tb-btn {
   background: none;
   border: 1px solid rgba(255,255,255,.12);
