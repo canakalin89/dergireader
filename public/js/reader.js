@@ -24,6 +24,46 @@ let pageW = 0, pageH = 0;
 const RENDER_SCALE = 2;
 const ZOOM_SCALE   = 3;
 
+// ── Page flip sound (Web Audio API — no external files) ──
+let audioCtx = null;
+function playFlipSound() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = audioCtx;
+    const now = ctx.currentTime;
+    const dur = 0.25;
+
+    // White noise burst → sounds like paper rustling
+    const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (var i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.4;
+    }
+
+    var noise = ctx.createBufferSource();
+    noise.buffer = buf;
+
+    // Bandpass filter — paper-like frequency range
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(3000, now);
+    filter.frequency.exponentialRampToValueAtTime(800, now + dur);
+    filter.Q.value = 0.8;
+
+    // Volume envelope — quick attack, smooth decay
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start(now);
+    noise.stop(now + dur);
+  } catch (e) { /* ses yoksa sessiz devam */ }
+}
+
 // ── DOM ──
 const loadingOverlay = document.getElementById('loadingOverlay');
 const loadingMsg     = document.getElementById('loadingMsg');
@@ -195,6 +235,7 @@ function initFlipBook() {
 
   pageFlip.on('flip', function(e) {
     currentIndex = e.data;
+    playFlipSound();
     updateNav();
     renderSpread(currentIndex);
     localStorage.setItem('dr_progress_' + magazineId, String(currentIndex + 1));
