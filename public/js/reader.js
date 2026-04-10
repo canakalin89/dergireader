@@ -35,7 +35,9 @@ var flipSounds = [];
   }
 })();
 var lastFlipIdx = -1;
+var soundEnabled = localStorage.getItem('dr_sound') !== 'off';
 function playFlipSound() {
+  if (!soundEnabled) return;
   try {
     var idx;
     do { idx = Math.floor(Math.random() * flipSounds.length); } while (idx === lastFlipIdx && flipSounds.length > 1);
@@ -44,6 +46,12 @@ function playFlipSound() {
     s.currentTime = 0;
     s.play().catch(function() {});
   } catch (e) { /* ses yoksa sessiz devam */ }
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('dr_sound', soundEnabled ? 'on' : 'off');
+  var btn = document.getElementById('btnSound');
+  if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
 }
 
 // ── DOM ──
@@ -324,6 +332,9 @@ document.addEventListener('keydown', function(e) {
     case 'f': case 'F':
       toggleFullscreen();
       break;
+    case 's': case 'S':
+      toggleSound();
+      break;
     case 'Home':
       if (pageFlip) pageFlip.flip(0);
       break;
@@ -372,6 +383,13 @@ function toggleFullscreen() {
   } else {
     document.exitFullscreen();
   }
+}
+
+// ── Sound toggle ──
+var btnSound = document.getElementById('btnSound');
+if (btnSound) {
+  btnSound.textContent = soundEnabled ? '🔊' : '🔇';
+  btnSound.addEventListener('click', toggleSound);
 }
 
 // ── Back ──
