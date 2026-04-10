@@ -1,60 +1,65 @@
 const { v4: uuidv4 } = require('uuid');
-const { verifyAdmin, verifyRole } = require('../_lib/auth');
-const { getMagazines, saveMagazines } = require('../_lib/store');
+const { verifyRole } = require('../_lib/auth');
+const { getMagazines, saveMagazines, parseBody } = require('../_lib/store');
+const { sendError } = require('../_lib/errors');
+
+// Google Drive file ID çıkar
+function extractDriveId(url) {
+  const m = url.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
+  return m ? m[1] : null;
+}
+
+// PDF URL'yi normalize et + kapak oluştur
+function normalizePdfData(rawPdfUrl, coverUrl) {
+  const fileId = extractDriveId(rawPdfUrl);
+  const pdfUrl = fileId
+    ? `https://drive.google.com/uc?export=download&id=${fileId}`
+    : rawPdfUrl;
+  const autoCover = fileId
+    ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`
+    : null;
+  return { pdfUrl, coverUrl: coverUrl || autoCover || null };
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET — herkese açık dergi listesi
+  // ── GET — herkese açık dergi listesi ──────────────────────────────────────
   if (req.method === 'GET') {
-    const magazines = await getMagazines();
-    magazines.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-    return res.status(200).json(magazines);
+    try {
+      const magazines = await getMagazines();
+      magazines.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+      return res.status(200).json(magazines);
+    } catch (err) {
+      return sendError(res, 'ERR_STORE_READ_FAILED', err.message);
+    }
   }
 
-  // POST — yeni dergi ekle (editor veya üstü)
+  // ── POST — yeni dergi ekle (editor veya üstü) ────────────────────────────
   if (req.method === 'POST') {
-    if (!verifyRole(req, 'editor')) {
-      return res.status(401).json({ error: 'Yetkisiz erişim' });
-    }
+    if (!verifyRole(req, 'editor')) return sendError(res, 'ERR_AUTH_INSUFFICIENT_ROLE');
 
     let body;
     try {
-      let raw = '';
-      for await (const chunk of req) raw += chunk;
-      body = JSON.parse(raw);
+      body = await parseBody(req);
     } catch {
-      return res.status(400).json({ error: 'Geçersiz istek — JSON bekleniyordu' });
+      return sendError(res, 'ERR_VAL_INVALID_JSON');
     }
 
+    const { title, issue, date, description, pdfUrl: rawPdfUrl, coverUrl: rawCoverUrl } = body;
+
+    // Doğrulama
+    if (!title || !String(title).trim()) return sendError(res, 'ERR_VAL_TITLE_REQUIRED');
+    if (String(title).trim().length > 120) return sendError(res, 'ERR_VAL_TITLE_TOO_LONG');
+    if (!rawPdfUrl) return sendError(res, 'ERR_VAL_PDF_URL_REQUIRED');
+    try { new URL(rawPdfUrl); } catch { return sendError(res, 'ERR_VAL_PDF_URL_INVALID'); }
+    if (rawCoverUrl) { try { new URL(rawCoverUrl); } catch { return sendError(res, 'ERR_VAL_COVER_URL_INVALID'); } }
+
     try {
-      const { title, issue, date, description, pdfUrl: rawPdfUrl, coverUrl } = body;
-
-      if (!title || !String(title).trim()) {
-        return res.status(400).json({ error: 'Başlık zorunludur' });
-      }
-      if (!rawPdfUrl) {
-        return res.status(400).json({ error: 'PDF dosyası veya URL zorunludur' });
-      }
-
-      try { new URL(rawPdfUrl); } catch {
-        return res.status(400).json({ error: 'Geçerli bir PDF URL\'si girin (https:// ile başlamalı)' });
-      }
-
-      // Google Drive link dönüşümü + otomatik kapak
-      const gDriveMatch = rawPdfUrl.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
-      const fileId = gDriveMatch?.[1] || null;
-      const pdfUrl = fileId
-        ? `https://drive.google.com/uc?export=download&id=${fileId}`
-        : rawPdfUrl;
-
-      // Kapak: manuel girilmişse onu kullan, yoksa Google Drive ise otomatik thumbnail
-      const autoCover = fileId ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w400` : null;
-      const finalCoverUrl = coverUrl || autoCover || null;
+      const { pdfUrl, coverUrl } = normalizePdfData(rawPdfUrl, rawCoverUrl);
 
       const magazine = {
         id: uuidv4(),
@@ -64,7 +69,7 @@ module.exports = async function handler(req, res) {
         description: description ? String(description).trim().slice(0, 500) : null,
         publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
         pdfUrl,
-        coverUrl: finalCoverUrl,
+        coverUrl,
         views: 0,
       };
 
@@ -72,12 +77,12 @@ module.exports = async function handler(req, res) {
       magazines.push(magazine);
       await saveMagazines(magazines);
 
+      console.log(`[API] Dergi eklendi: ${magazine.id} — "${magazine.title}"`);
       return res.status(201).json(magazine);
     } catch (err) {
-      console.error('[magazines POST] hata:', err);
-      return res.status(500).json({ error: 'Kayıt sırasında hata: ' + err.message });
+      return sendError(res, 'ERR_MAG_SAVE_FAILED', err.message);
     }
   }
 
-  return res.status(405).json({ error: 'Method not allowed' });
+  return sendError(res, 'ERR_METHOD_NOT_ALLOWED');
 };

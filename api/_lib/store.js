@@ -2,26 +2,63 @@ const { put, list, del } = require('@vercel/blob');
 
 const METADATA_KEY = 'data/magazines.json';
 const USERS_KEY = 'data/users.json';
+const MAX_RETRIES = 2;
 
-async function getMagazines() {
-  try {
-    const { blobs } = await list({ prefix: METADATA_KEY });
-    if (!blobs.length) return [];
-    const res = await fetch(blobs[0].url + '?t=' + Date.now());
-    return await res.json();
-  } catch {
-    return [];
-  }
+// ── Yardımcılar ─────────────────────────────────────────────────────────────
+
+/** İstek gövdesini chunk olarak oku ve JSON olarak parse et. */
+async function parseBody(req) {
+  let raw = '';
+  for await (const chunk of req) raw += chunk;
+  if (!raw) return {};
+  return JSON.parse(raw);
 }
 
-async function saveMagazines(magazines) {
-  const content = JSON.stringify(magazines, null, 2);
-  await put(METADATA_KEY, content, {
+/** Blob okuma/yazma işlemlerini retry ile sar. */
+async function withRetry(fn, label) {
+  let lastErr;
+  for (let i = 0; i <= MAX_RETRIES; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      console.error(`[store:${label}] deneme ${i + 1}/${MAX_RETRIES + 1} başarısız:`, err.message);
+      if (i < MAX_RETRIES) await new Promise(r => setTimeout(r, 300 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+// ── Blob JSON okuma/yazma ───────────────────────────────────────────────────
+
+async function readBlobJson(key) {
+  const { blobs } = await list({ prefix: key });
+  if (!blobs.length) return [];
+  const url = blobs[0].url + '?t=' + Date.now();
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Blob okuma hatası: ${res.status}`);
+  return await res.json();
+}
+
+async function writeBlobJson(key, data) {
+  await put(key, JSON.stringify(data, null, 2), {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
   });
 }
+
+// ── Dergi CRUD ──────────────────────────────────────────────────────────────
+
+async function getMagazines() {
+  return withRetry(() => readBlobJson(METADATA_KEY), 'getMagazines').catch(() => []);
+}
+
+async function saveMagazines(magazines) {
+  return withRetry(() => writeBlobJson(METADATA_KEY, magazines), 'saveMagazines');
+}
+
+// ── Dosya CRUD ──────────────────────────────────────────────────────────────
 
 async function uploadFile(buffer, filename, contentType) {
   const { url } = await put(filename, buffer, {
@@ -33,48 +70,34 @@ async function uploadFile(buffer, filename, contentType) {
 }
 
 async function deleteFile(url) {
-  try {
-    await del(url);
-  } catch {
-    // Blob zaten silinmiş olabilir, sessizce geç
-  }
+  if (!url) return;
+  // Google Drive URL'lerini silmeye çalışma — sadece Vercel Blob URL'leri
+  if (!url.includes('vercel-storage.com') && !url.includes('blob.vercel-storage')) return;
+  try { await del(url); } catch { /* blob zaten silinmiş olabilir */ }
 }
 
+// ── Kullanıcı CRUD ──────────────────────────────────────────────────────────
+
 async function getUsers() {
-  try {
-    const { blobs } = await list({ prefix: USERS_KEY });
-    if (!blobs.length) return [];
-    const res = await fetch(blobs[0].url + '?t=' + Date.now());
-    return await res.json();
-  } catch {
-    return [];
-  }
+  return withRetry(() => readBlobJson(USERS_KEY), 'getUsers').catch(() => []);
 }
 
 async function saveUsers(users) {
-  const content = JSON.stringify(users, null, 2);
-  await put(USERS_KEY, content, {
-    access: 'public',
-    contentType: 'application/json',
-    addRandomSuffix: false,
-  });
+  return withRetry(() => writeBlobJson(USERS_KEY, users), 'saveUsers');
 }
 
-// Kullanıcıyı oluştur ya da son girişi güncelle
 async function upsertUser({ id, email, name, picture, provider }) {
   const users = await getUsers();
   const idx = users.findIndex(u => u.id === id);
   const isOwner = email === process.env.OWNER_EMAIL;
 
   if (idx >= 0) {
-    // Var olan kullanıcı — owner rolü korunsun
     if (isOwner) users[idx].role = 'owner';
     users[idx] = { ...users[idx], name, picture, lastLogin: new Date().toISOString() };
     await saveUsers(users);
     return users[idx];
   }
 
-  // Yeni kullanıcı
   const user = {
     id, email, name, picture, provider,
     role: isOwner ? 'owner' : 'pending',
@@ -86,4 +109,9 @@ async function upsertUser({ id, email, name, picture, provider }) {
   return user;
 }
 
-module.exports = { getMagazines, saveMagazines, uploadFile, deleteFile, getUsers, saveUsers, upsertUser };
+module.exports = {
+  parseBody,
+  getMagazines, saveMagazines,
+  uploadFile, deleteFile,
+  getUsers, saveUsers, upsertUser,
+};

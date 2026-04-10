@@ -1,33 +1,28 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getUsers, saveUsers } = require('../_lib/store');
+const { sendError } = require('../_lib/errors');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'POST') return sendError(res, 'ERR_METHOD_NOT_ALLOWED');
 
   const { email, password } = req.body || {};
-  if (!email || !password)
-    return res.status(400).json({ error: 'E-posta ve şifre zorunludur' });
+  if (!email)    return sendError(res, 'ERR_VAL_EMAIL_REQUIRED');
+  if (!password) return sendError(res, 'ERR_VAL_PASSWORD_REQUIRED');
 
   const users = await getUsers();
   const user = users.find(u => u.email === email.toLowerCase() && u.provider === 'local');
 
-  if (!user)
-    return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
-  if (!user.passwordHash)
-    return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
+  if (!user || !user.passwordHash) return sendError(res, 'ERR_USR_WRONG_PASSWORD');
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid)
-    return res.status(401).json({ error: 'E-posta veya şifre hatalı' });
+  if (!valid) return sendError(res, 'ERR_USR_WRONG_PASSWORD');
 
-  // Son giriş güncelle
   user.lastLogin = new Date().toISOString();
-  // owner e-posta kontrolü
   if (user.email === (process.env.OWNER_EMAIL || '').toLowerCase()) user.role = 'owner';
   await saveUsers(users);
 
