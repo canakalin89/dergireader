@@ -445,6 +445,70 @@ body {
   opacity: .4;
 }
 
+/* ---- Kategori filtre barı ---- */
+.category-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .65rem 1.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+.category-filter-bar::-webkit-scrollbar { display: none; }
+.filter-btn {
+  flex-shrink: 0;
+  padding: .32rem .9rem;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text);
+  font: 500 .78rem var(--font-body);
+  cursor: pointer;
+  transition: background var(--tr), border-color var(--tr), color var(--tr);
+  white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--cat-color, var(--accent)); color: var(--cat-color, var(--accent)); }
+.filter-btn--active {
+  background: var(--cat-color, var(--accent));
+  border-color: var(--cat-color, var(--accent));
+  color: #fff;
+}
+
+/* ---- Kategori chip (kart üstü) ---- */
+.card-cat { margin-bottom: .35rem; }
+.category-chip {
+  display: inline-block;
+  padding: .18rem .55rem;
+  border-radius: 999px;
+  font-size: .65rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+/* ---- Admin kategori listesi ---- */
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .55rem .75rem;
+  border: 1px solid var(--border-light, #e8e2d9);
+  border-radius: 8px;
+  margin-bottom: .5rem;
+  background: var(--bg-input, #f8f7f5);
+}
+.cat-swatch {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.cat-name { font-size: .9rem; font-weight: 500; }
+
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
   .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }

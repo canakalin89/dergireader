@@ -126,7 +126,9 @@ function showAdminContent() {
 
   if (hasRole('owner')) {
     document.getElementById('usersPanel').style.display = '';
+    document.getElementById('categoriesPanel').style.display = '';
     loadUsers();
+    loadCategories();
   }
 
   loadMagazines();
@@ -284,6 +286,86 @@ document.getElementById('magazineList').addEventListener('click', (e) => {
   }
 });
 
+// ── Kategori dropdown'ları güncelle ─────────────────────────────────────────
+function populateCategorySelects(categories) {
+  ['inCategory', 'editCategory'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Kategori Seç —</option>';
+    categories.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name;
+      if (c.id === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+// ── Kategoriler ─────────────────────────────────────────────────────────────
+let allCategories = [];
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    if (!res.ok) return;
+    allCategories = await res.json();
+    renderCategories(allCategories);
+    populateCategorySelects(allCategories);
+  } catch { /* ignore */ }
+}
+
+function renderCategories(cats) {
+  const listEl = document.getElementById('catList');
+  const countEl = document.getElementById('catsCount');
+  if (!listEl) return;
+  countEl.textContent = `${cats.length}`;
+
+  if (!cats.length) {
+    listEl.innerHTML = '<div class="list-empty">Henüz kategori yok.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  cats.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'cat-item';
+    item.innerHTML = `
+      <span class="cat-swatch" style="background:${esc(c.color || '#6366f1')}"></span>
+      <span class="cat-name">${esc(c.name)}</span>
+      <button class="btn btn-outline btn-delete-cat" data-id="${esc(c.id)}" data-name="${esc(c.name)}" title="Sil" style="margin-left:auto">🗑</button>`;
+    listEl.appendChild(item);
+  });
+}
+
+document.getElementById('catForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('catName').value.trim();
+  const color = document.getElementById('catColor').value;
+  if (!name) return;
+
+  try {
+    const res = await fetch('/api/categories?action=create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name, color }),
+    });
+    if (!res.ok) throw new Error(await parseApiError(res, 'Oluşturulamadı'));
+    document.getElementById('catName').value = '';
+    showToast('Kategori eklendi', 'success');
+    await loadCategories();
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error');
+  }
+});
+
+document.getElementById('catList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('.btn-delete-cat');
+  if (!btn) return;
+  openDeleteModal('category', btn.dataset.id, btn.dataset.name);
+});
+
 // ── Dergi Ekleme ────────────────────────────────────────────────────────────
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -311,6 +393,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         description: document.getElementById('inDesc').value.trim() || null,
         pdfUrl,
         coverUrl: document.getElementById('inCoverUrl').value.trim() || null,
+        categoryId: document.getElementById('inCategory').value || null,
       }),
     });
 
@@ -341,6 +424,8 @@ function openDeleteModal(mode, id, label) {
   const msgEl = document.getElementById('deleteModalMsg');
   msgEl.textContent = mode === 'user'
     ? `"${label}" kullanıcısını kaldırmak istediğinize emin misiniz?`
+    : mode === 'category'
+    ? `"${label}" kategorisini silmek istediğinize emin misiniz?`
     : `"${label}" dergisini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`;
   document.getElementById('deleteConfirmBtn').disabled = false;
   document.getElementById('deleteConfirmBtn').textContent = 'Evet, Sil';
@@ -381,6 +466,20 @@ document.getElementById('deleteConfirmBtn').addEventListener('click', async () =
       return;
     }
 
+    if (deleteState.mode === 'category') {
+      const res = await fetch('/api/categories?action=delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ id: deleteState.id }),
+      });
+      if (!res.ok) throw new Error(await parseApiError(res, 'Silinemedi'));
+      showToast('Kategori silindi.', 'success');
+      hideLoading();
+      closeDeleteModal();
+      await loadCategories();
+      return;
+    }
+
     // Dergi silme
     const res = await fetch(`/api/magazines/${encodeURIComponent(deleteState.id)}?action=delete`, {
       method: 'POST',
@@ -417,6 +516,7 @@ function openEditModal(mag) {
   document.getElementById('editPdfUrl').value = mag.pdfUrl || '';
   document.getElementById('editCoverUrl').value = mag.coverUrl || '';
   document.getElementById('editDesc').value = mag.description || '';
+  document.getElementById('editCategory').value = mag.categoryId || '';
   document.getElementById('editModal').classList.add('open');
 }
 
@@ -439,6 +539,7 @@ document.getElementById('editForm').addEventListener('submit', async (e) => {
     pdfUrl: document.getElementById('editPdfUrl').value.trim(),
     coverUrl: document.getElementById('editCoverUrl').value.trim(),
     description: document.getElementById('editDesc').value.trim(),
+    categoryId: document.getElementById('editCategory').value || null,
   };
 
   if (!body.title) {

@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
       return sendError(res, 'ERR_VAL_INVALID_JSON');
     }
 
-    const { title, issue, date, description, pdfUrl: rawPdfUrl, coverUrl: rawCoverUrl } = body;
+    const { title, issue, date, description, pdfUrl: rawPdfUrl, coverUrl: rawCoverUrl, categoryId } = body;
 
     // Doğrulama
     if (!title || !String(title).trim()) return sendError(res, 'ERR_VAL_TITLE_REQUIRED');
@@ -77,6 +77,7 @@ module.exports = async function handler(req, res) {
         publishedAt: date ? new Date(date).toISOString() : new Date().toISOString(),
         pdfUrl,
         coverUrl,
+        categoryId: categoryId || null,
         views: 0,
       };
 

@@ -94,6 +94,10 @@ module.exports = async function handler(req, res) {
       mag.coverUrl = body.coverUrl || null;
     }
 
+    if (body.categoryId !== undefined) {
+      mag.categoryId = body.categoryId || null;
+    }
+
     try {
       await saveMagazines(magazines);
       console.log(`[API] Dergi güncellendi: ${mag.id} — "${mag.title}"`);

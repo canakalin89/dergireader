@@ -3,6 +3,7 @@ const { put, list, del } = require('@vercel/blob');
 const METADATA_KEY = 'data/magazines.json';
 const USERS_KEY = 'data/users.json';
 const VIEWS_KEY  = 'data/views.json';
+const CATEGORIES_KEY = 'data/categories.json';
 const MAX_RETRIES = 2;
 
 // ── Yardımcılar ─────────────────────────────────────────────────────────────
@@ -86,6 +87,16 @@ async function deleteFile(url) {
   try { await del(url); } catch { /* blob zaten silinmiş olabilir */ }
 }
 
+// ── Kategori CRUD ───────────────────────────────────────────────────────────
+
+async function getCategories() {
+  return withRetry(() => readBlobJson(CATEGORIES_KEY), 'getCategories').catch(() => []);
+}
+
+async function saveCategories(categories) {
+  return withRetry(() => writeBlobJson(CATEGORIES_KEY, categories), 'saveCategories');
+}
+
 // ── Görüntüleme sayaçları ───────────────────────────────────────────────────
 
 async function getViews() {
@@ -138,4 +149,5 @@ module.exports = {
   uploadFile, deleteFile,
   getUsers, saveUsers, upsertUser,
   getViews, incrementView,
+  getCategories, saveCategories,
 };

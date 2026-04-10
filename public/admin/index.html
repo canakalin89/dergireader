@@ -123,6 +123,12 @@
                 placeholder="https://…/kapak.jpg — boş bırakırsanız otomatik oluşturulur" />
             </div>
             <div class="field field--full">
+              <label for="inCategory">Kategori <span class="field-optional">(isteğe bağlı)</span></label>
+              <select class="field-input" id="inCategory" name="categoryId">
+                <option value="">— Kategori Seç —</option>
+              </select>
+            </div>
+            <div class="field field--full">
               <label for="inDesc">Açıklama</label>
               <textarea class="field-input field-textarea" id="inDesc" name="description" placeholder="Dergi hakkında kısa bir açıklama…" rows="3" maxlength="500"></textarea>
             </div>
@@ -149,6 +155,31 @@
         <div class="magazine-list" id="magazineList">
           <div class="list-empty">Yükleniyor…</div>
         </div>
+      </div>
+    </section>
+
+    <!-- Kategoriler (sadece owner görür) -->
+    <section class="panel" id="categoriesPanel" style="display:none">
+      <div class="panel-head">
+        <div class="panel-title">
+          <span class="panel-icon">🏷️</span>
+          Kategoriler
+        </div>
+        <span class="panel-badge" id="catsCount">—</span>
+      </div>
+      <div class="panel-body">
+        <form id="catForm" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+          <div class="field" style="flex:1;min-width:160px;margin-bottom:0">
+            <label for="catName">Yeni Kategori Adı</label>
+            <input class="field-input" type="text" id="catName" placeholder="Müzik, Spor…" maxlength="60" required />
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label for="catColor">Renk</label>
+            <input class="field-input" type="color" id="catColor" value="#6366f1" style="height:42px;padding:4px;width:56px;cursor:pointer" />
+          </div>
+          <button class="btn btn-primary" type="submit" style="white-space:nowrap">+ Ekle</button>
+        </form>
+        <div class="cat-list" id="catList"><div class="list-empty">Henüz kategori yok.</div></div>
       </div>
     </section>
 
@@ -210,6 +241,12 @@
           <div class="field field--full">
             <label for="editCoverUrl">Kapak URL <span class="field-optional">(isteğe bağlı)</span></label>
             <input class="field-input" type="url" id="editCoverUrl" />
+          </div>
+          <div class="field field--full">
+            <label for="editCategory">Kategori <span class="field-optional">(isteğe bağlı)</span></label>
+            <select class="field-input" id="editCategory">
+              <option value="">— Kategori Seç —</option>
+            </select>
           </div>
           <div class="field field--full">
             <label for="editDesc">Açıklama</label>

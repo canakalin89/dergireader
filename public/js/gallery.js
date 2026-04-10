@@ -5,7 +5,9 @@
 const API = '/api/magazines';
 
 let allMagazines = [];
+let allCategories = [];
 let newestMagId  = null;
+let activeCategoryId = null;
 
 // ---- Tema ----
 const html = document.documentElement;
@@ -45,14 +47,18 @@ let viewsData = {};
 // ---- Veri yükleme ----
 async function loadMagazines() {
   try {
-    const [magRes, viewsRes] = await Promise.all([
+    const [magRes, viewsRes, catRes] = await Promise.all([
       fetch(API),
       fetch('/api/views').catch(() => null),
+      fetch('/api/categories').catch(() => null),
     ]);
     if (!magRes.ok) throw new Error('API hatası');
     allMagazines = await magRes.json();
     if (viewsRes && viewsRes.ok) {
       viewsData = await viewsRes.json().catch(() => ({}));
+    }
+    if (catRes && catRes.ok) {
+      allCategories = await catRes.json().catch(() => []);
     }
     if (allMagazines.length) {
       const sorted = [...allMagazines].sort((a, b) =>
@@ -62,7 +68,8 @@ async function loadMagazines() {
     }
     renderStats(allMagazines);
     populateYearFilter(allMagazines);
-    renderGallery(allMagazines);
+    renderCategoryFilter(allCategories);
+    renderGallery(filteredMagazines());
   } catch (err) {
     document.getElementById('errorBanner').style.display = 'block';
     document.getElementById('galleryGrid').innerHTML = '';
@@ -85,6 +92,49 @@ function renderStats(magazines) {
   var statsBar = document.getElementById('statsBar');
   var spans = statsBar.querySelectorAll('span');
   if (spans[2]) spans[2].textContent = '📖 ' + magazines.length + ' yayın arşivde';
+}
+
+// ---- Kategori filtresi ----
+function renderCategoryFilter(cats) {
+  var bar = document.getElementById('categoryFilter');
+  if (!bar) return;
+  if (!cats.length) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  bar.innerHTML = '';
+
+  var all = document.createElement('button');
+  all.className = 'filter-btn' + (activeCategoryId === null ? ' filter-btn--active' : '');
+  all.textContent = 'Tümü';
+  all.addEventListener('click', function () {
+    activeCategoryId = null;
+    renderCategoryFilter(allCategories);
+    renderGallery(filteredMagazines());
+  });
+  bar.appendChild(all);
+
+  cats.forEach(function (c) {
+    var btn = document.createElement('button');
+    btn.className = 'filter-btn' + (activeCategoryId === c.id ? ' filter-btn--active' : '');
+    btn.textContent = c.name;
+    btn.style.setProperty('--cat-color', c.color || '#6366f1');
+    btn.addEventListener('click', function () {
+      activeCategoryId = c.id;
+      renderCategoryFilter(allCategories);
+      renderGallery(filteredMagazines());
+    });
+    bar.appendChild(btn);
+  });
+}
+
+// ---- Birleşik filtre ----
+function filteredMagazines() {
+  var year = document.getElementById('filterYear').value;
+  return allMagazines.filter(function (m) {
+    var my = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
+    var yearOk = !year || my === year;
+    var catOk = !activeCategoryId || m.categoryId === activeCategoryId;
+    return yearOk && catOk;
+  });
 }
 
 // ---- Yıl filtresi ----
@@ -151,10 +201,13 @@ function renderGallery(magazines) {
     }
     var vCount = viewsData[mag.id] || 0;
     var viewBadge = '<span class="view-count' + (meta.length ? ' dot' : '') + '" title="Görüntülenme">👁 ' + formatViews(vCount) + '</span>';
+    var cat = allCategories.find(function (c) { return c.id === mag.categoryId; });
+    var catChip = cat ? '<span class="category-chip" style="background:' + escHtml(cat.color || '#6366f1') + '">' + escHtml(cat.name) + '</span>' : '';
 
     card.innerHTML =
       '<div class="card-cover">' + inner + badge + '</div>' +
       '<div class="card-info">' +
+        (catChip ? '<div class="card-cat">' + catChip + '</div>' : '') +
         '<div class="card-title">' + escHtml(mag.title) + '</div>' +
         (mag.description ? '<div class="card-desc">' + escHtml(mag.description) + '</div>' : '') +
         '<div class="card-meta">' + meta.join('') + viewBadge + '</div>' +
@@ -166,18 +219,15 @@ function renderGallery(magazines) {
 
 // ---- Filtre ----
 function applyFilters() {
-  var year = document.getElementById('filterYear').value;
-  var filtered = allMagazines.filter(function (m) {
-    var my = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
-    return !year || my === year;
-  });
-  renderGallery(filtered);
+  renderGallery(filteredMagazines());
 }
 
 document.getElementById('filterYear').addEventListener('change', applyFilters);
 document.getElementById('filterReset').addEventListener('click', function () {
   document.getElementById('filterYear').value = '';
-  renderGallery(allMagazines);
+  activeCategoryId = null;
+  renderCategoryFilter(allCategories);
+  renderGallery(filteredMagazines());
 });
 
 // ---- Yardımcı ----
