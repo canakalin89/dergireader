@@ -151,11 +151,11 @@ async function loadPdf(url) {
   });
 
   var tips = [
-    'Kapak tasarımı okunuyor…',
-    'Sayfalar düzenleniyor…',
-    'Mürekkep kuruyor…',
-    'Cilt yapıştırılıyor…',
-    'Sayfa kenarları kesiliyor…',
+    'Dergi raftan alınıyor…',
+    'Kapak açılıyor…',
+    'Sayfalar çevrilmeye hazırlanıyor…',
+    'Okuma köşeniz hazırlanıyor…',
+    'Neredeyse hazır, iyi okumalar…',
   ];
   var tipIdx = 0;
 
@@ -176,7 +176,7 @@ async function loadPdf(url) {
   totalLabel.textContent = totalPages;
 
   setLoadProgress(92);
-  setMsg('Son rötuşlar… ' + totalPages + ' sayfa hazır');
+  setMsg('Keyifli okumalar! ' + totalPages + ' sayfa hazır');
 
   const firstPage = await pdfDoc.getPage(1);
   const baseVp    = firstPage.getViewport({ scale: RENDER_SCALE });
