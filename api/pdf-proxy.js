@@ -1,102 +1,66 @@
 /* ============================================
-   pdf-proxy.js — Google Drive PDF Proxy
-   Drive URL'lerini server-side fetch ile indirip
-   CORS sorunsuz döndürür. Flipbook modunun
-   Drive dosyalarıyla çalışmasını sağlar.
+   pdf-proxy.js — Google Drive PDF Proxy (Edge)
+   Edge Function = streaming response, boyut limiti yok.
+   Drive PDF'lerini CORS sorunsuz stream eder.
    ============================================ */
 
-const ALLOWED_DOMAINS = [
-  'drive.google.com',
-  'docs.google.com',
-  'vercel-storage.com',
-  'googleapis.com',
-];
+export const config = { runtime: 'edge' };
 
-const MAX_SIZE = 4 * 1024 * 1024; // 4 MB (Vercel Hobby response limit ~4.5MB)
+const ALLOWED = ['drive.google.com', 'docs.google.com', 'googleapis.com', 'vercel-storage.com'];
+const CORS = { 'Access-Control-Allow-Origin': '*' };
 
-export default async function handler(req, res) {
-  // CORS preflight
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+function json(status, body) {
+  return Response.json(body, { status, headers: CORS });
+}
+
+function isAllowed(raw) {
+  try {
+    const h = new URL(raw).hostname;
+    return ALLOWED.some(d => h === d || h.endsWith('.' + d));
+  } catch { return false; }
+}
+
+export default async function handler(req) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: { ...CORS, 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': '*' },
+    });
   }
 
-  const rawUrl = req.query.url;
-  if (!rawUrl) {
-    return res.status(400).json({ error: 'MISSING_URL', message: 'url parametresi gerekli.' });
-  }
-
-  let decoded;
-  try { decoded = decodeURIComponent(rawUrl); } catch {
-    return res.status(400).json({ error: 'INVALID_URL', message: 'URL çözümlenemedi.' });
-  }
-
-  // Domain whitelist
-  const isAllowed = ALLOWED_DOMAINS.some(d => decoded.includes(d));
-  if (!isAllowed) {
-    return res.status(403).json({ error: 'DOMAIN_NOT_ALLOWED', message: 'Bu kaynak desteklenmiyor.' });
-  }
+  const url = new URL(req.url).searchParams.get('url');
+  if (!url) return json(400, { error: 'MISSING_URL', message: 'url parametresi gerekli.' });
+  if (!isAllowed(url)) return json(403, { error: 'DOMAIN_NOT_ALLOWED', message: 'Sadece Google Drive desteklenir.' });
 
   try {
-    let response = await fetch(decoded, {
-      redirect: 'follow',
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DergiReader/1.0)' },
-    });
+    let res = await fetch(url, { redirect: 'follow' });
+    const ct = res.headers.get('content-type') || '';
 
-    // Google Drive may return HTML confirm page for large files
-    const ct = response.headers.get('content-type') || '';
+    // Drive confirmation page for large files
     if (ct.includes('text/html')) {
-      const html = await response.text();
-
-      // Try extracting the confirm token
-      const confirmMatch = html.match(/confirm=([a-zA-Z0-9_-]+)/);
-      if (confirmMatch) {
-        const sep = decoded.includes('?') ? '&' : '?';
-        const confirmUrl = `${decoded}${sep}confirm=${confirmMatch[1]}`;
-        response = await fetch(confirmUrl, {
-          redirect: 'follow',
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DergiReader/1.0)' },
-        });
+      const html = await res.text();
+      const m = html.match(/confirm=([0-9A-Za-z_-]+)/);
+      if (m) {
+        const sep = url.includes('?') ? '&' : '?';
+        res = await fetch(url + sep + 'confirm=' + m[1], { redirect: 'follow' });
+      } else if (html.includes('ServiceLogin') || html.includes('signin') || html.includes('accounts.google')) {
+        return json(403, { error: 'DRIVE_ACCESS_DENIED', message: 'Dosya paylaşıma açık değil. Drive ayarlarını kontrol edin.' });
       } else {
-        // Drive blocked access — file not shared publicly
-        return res.status(502).json({
-          error: 'DRIVE_ACCESS_DENIED',
-          message: 'Google Drive dosyaya erişimi engelledi. Dosyanın "Bağlantıya sahip herkes" ile paylaşıldığından emin olun.',
-        });
+        return json(422, { error: 'NOT_A_PDF', message: 'İçerik PDF değil.' });
       }
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-
-    // Size check
-    if (buffer.length > MAX_SIZE) {
-      return res.status(413).json({
-        error: 'PDF_TOO_LARGE',
-        message: `PDF çok büyük (${(buffer.length / 1024 / 1024).toFixed(1)} MB). Limit: 4 MB.`,
-        size: buffer.length,
-      });
-    }
-
-    // PDF signature check
-    if (buffer.length < 5 || buffer.toString('utf-8', 0, 5) !== '%PDF-') {
-      return res.status(502).json({
-        error: 'NOT_A_PDF',
-        message: 'İndirilen dosya geçerli bir PDF değil.',
-      });
-    }
-
-    // Success — send PDF with caching
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Length', buffer.length);
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=86400');
-    return res.send(buffer);
-  } catch (err) {
-    console.error('[pdf-proxy] Fetch error:', err.message);
-    return res.status(502).json({
-      error: 'FETCH_FAILED',
-      message: 'PDF indirilemedi: ' + err.message,
+    // Stream the PDF — no body size limit with Edge Functions
+    const cl = res.headers.get('content-length');
+    return new Response(res.body, {
+      headers: {
+        ...CORS,
+        'Content-Type': 'application/pdf',
+        'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+        ...(cl ? { 'Content-Length': cl } : {}),
+      },
     });
+  } catch (e) {
+    return json(502, { error: 'FETCH_FAILED', message: 'PDF indirilemedi: ' + e.message });
   }
 }
