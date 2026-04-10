@@ -96,7 +96,7 @@
         </div>
       </div>
       <div class="panel-body">
-        <form class="upload-form" id="uploadForm" enctype="multipart/form-data">
+        <form class="upload-form" id="uploadForm">
 
           <div class="field-grid">
             <div class="field field--full">
@@ -112,61 +112,19 @@
               <input class="field-input" type="date" id="inDate" name="date" />
             </div>
             <div class="field field--full">
+              <label for="inPdfUrl">PDF Bağlantısı <span class="req">*</span></label>
+              <input class="field-input" type="url" id="inPdfUrl" name="pdfUrl" required
+                placeholder="https://drive.google.com/… veya https://…/dergi.pdf" />
+              <p class="url-hint">Google Drive: Paylaş → Bağlantıya sahip herkes → linki yapıştırın</p>
+            </div>
+            <div class="field field--full">
               <label for="inDesc">Açıklama</label>
               <textarea class="field-input field-textarea" id="inDesc" name="description" placeholder="Dergi hakkında kısa bir açıklama…" rows="3" maxlength="500"></textarea>
             </div>
           </div>
 
-          <!-- PDF Kaynak Seçimi -->
-          <div class="source-toggle">
-            <button type="button" class="src-btn src-btn--active" id="srcUploadBtn" onclick="setPdfSource('upload')">📤 Dosya Yükle</button>
-            <button type="button" class="src-btn" id="srcUrlBtn" onclick="setPdfSource('url')">🔗 URL ile Ekle</button>
-          </div>
-
-          <div class="file-grid">
-            <!-- Upload modu -->
-            <div class="drop-zone" id="pdfDrop">
-              <input type="file" id="inPdf" name="pdf" accept=".pdf,application/pdf" />
-              <div class="drop-icon">📄</div>
-              <div class="drop-text">
-                <strong>PDF Dosyası</strong>
-                <span>Tıklayın veya sürükleyin · maks. 50 MB</span>
-              </div>
-              <div class="file-chosen" id="pdfChosen"></div>
-            </div>
-
-            <!-- URL modu -->
-            <div class="url-zone" id="pdfUrlZone" style="display:none">
-              <div class="drop-icon">🔗</div>
-              <div class="drop-text" style="margin-bottom:.75rem">
-                <strong>PDF Bağlantısı</strong>
-                <span>Google Drive, OneDrive veya doğrudan PDF URL</span>
-              </div>
-              <input class="field-input" type="url" id="inPdfUrl" name="pdfUrl"
-                placeholder="https://drive.google.com/…  veya  https://…/dergi.pdf" />
-              <p class="url-hint">Google Drive için: Paylaş → Bağlantıya sahip herkes → linki yapıştırın</p>
-            </div>
-
-            <div class="drop-zone" id="coverDrop">
-              <input type="file" id="inCover" name="cover" accept="image/jpeg,image/png,image/webp" />
-              <div class="drop-icon">🖼️</div>
-              <div class="drop-text">
-                <strong>Kapak Görseli</strong>
-                <span>İsteğe bağlı · JPG / PNG / WebP</span>
-              </div>
-              <div class="file-chosen" id="coverChosen"></div>
-            </div>
-          </div>
-
-          <div class="progress-wrap" id="progressWrap">
-            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-            <span class="progress-label" id="progressLabel">Yükleniyor…</span>
-          </div>
-
           <div class="form-footer">
-            <button class="btn btn-primary" type="submit" id="submitBtn">
-              <span>Yükle</span>
-            </button>
+            <button class="btn btn-primary" type="submit" id="submitBtn">💾 Kaydet</button>
           </div>
 
         </form>
