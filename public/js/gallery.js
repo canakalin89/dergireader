@@ -5,7 +5,7 @@
 const API = '/api/magazines';
 
 let allMagazines = [];
-let newestMagId  = null; // en son eklenen derginin id'si — "YENİ" badge
+let newestMagId  = null;
 
 // ---- Tema ----
 const html = document.documentElement;
@@ -28,13 +28,24 @@ themeToggle.addEventListener('click', () => {
   applyTheme(next);
 });
 
+// ---- Renk paleti ----
+const PALETTES = [
+  { bg: 'linear-gradient(145deg, #1a3a5c, #2d6aa0)', ac: '#4da6e8' },
+  { bg: 'linear-gradient(145deg, #2d1b4e, #6b3fa0)', ac: '#a87de8' },
+  { bg: 'linear-gradient(145deg, #1b3d2f, #2d8a5e)', ac: '#4de8a0' },
+  { bg: 'linear-gradient(145deg, #5c1a2a, #a03d5a)', ac: '#e84d7a' },
+  { bg: 'linear-gradient(145deg, #3d2d1b, #8a6a2d)', ac: '#e8b84d' },
+  { bg: 'linear-gradient(145deg, #1b3d3d, #2d8a8a)', ac: '#4de8e8' },
+  { bg: 'linear-gradient(145deg, #3d1b2d, #8a2d6a)', ac: '#e84dc0' },
+  { bg: 'linear-gradient(145deg, #1b2d3d, #2d5c8a)', ac: '#4d8ae8' },
+];
+
 // ---- Veri yükleme ----
 async function loadMagazines() {
   try {
     const res = await fetch(API);
     if (!res.ok) throw new Error('API hatası');
     allMagazines = await res.json();
-    // En son eklenen dergiyi bul — "YENİ" etiketi sadece ona konur
     if (allMagazines.length) {
       const sorted = [...allMagazines].sort((a, b) =>
         new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
@@ -57,143 +68,111 @@ function renderStats(magazines) {
     m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
   ).filter(Boolean))].sort();
   if (years.length > 1) {
-    document.getElementById('statYears').textContent = `${years[0]}–${years[years.length - 1]}`;
+    document.getElementById('statYears').textContent = years[0] + '–' + years[years.length - 1];
   } else if (years.length === 1) {
     document.getElementById('statYears').textContent = String(years[0]);
   } else {
     document.getElementById('statYears').textContent = '—';
   }
-  const statsBar = document.getElementById('statsBar');
-  const spans = statsBar.querySelectorAll('span');
-  if (spans[2]) spans[2].textContent = `📖 ${magazines.length} yayın arşivde`;
+  var statsBar = document.getElementById('statsBar');
+  var spans = statsBar.querySelectorAll('span');
+  if (spans[2]) spans[2].textContent = '📖 ' + magazines.length + ' yayın arşivde';
 }
 
-// ---- Yıl filtresi doldur ----
+// ---- Yıl filtresi ----
 function populateYearFilter(magazines) {
-  const sel = document.getElementById('filterYear');
-  const years = [...new Set(magazines.map(m =>
+  var sel = document.getElementById('filterYear');
+  var years = [...new Set(magazines.map(m =>
     m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
   ).filter(Boolean))].sort((a, b) => b - a);
   years.forEach(y => {
-    const opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
+    var opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
     sel.appendChild(opt);
   });
 }
 
 // ---- Galeri render ----
 function renderGallery(magazines) {
-  const grid = document.getElementById('galleryGrid');
+  var grid = document.getElementById('galleryGrid');
   grid.innerHTML = '';
 
   if (!magazines.length) {
-    grid.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <h3>Henüz dergi eklenmedi</h3>
-        <p>İlk dergi admin panelinden yüklenebilir.</p>
-      </div>`;
+    grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div>' +
+      '<h3>Henüz dergi eklenmedi</h3><p>İlk dergi admin panelinden yüklenebilir.</p></div>';
     return;
   }
 
-  magazines.forEach(mag => {
-    const isNew = mag.id === newestMagId;
-    const card = document.createElement('a');
+  magazines.forEach(function (mag, idx) {
+    var isNew = mag.id === newestMagId;
+    var card = document.createElement('a');
     card.className = 'magazine-card';
-    card.href = `/reader.html?id=${encodeURIComponent(mag.id)}`;
-    card.setAttribute('aria-label', `${mag.title} — Sayı ${mag.issue}`);
+    card.href = '/reader.html?id=' + encodeURIComponent(mag.id);
+    card.setAttribute('aria-label', mag.title + ' — Sayı ' + mag.issue);
 
-    var badgeHtml = isNew ? '<span class="badge-new">YENİ</span>' : '';
-    // PDF proxy üzerinden ilk sayfayı canvas'a render et
-    var proxyUrl = '/api/pdf-proxy?url=' + encodeURIComponent(mag.pdfUrl);
-    const coverHtml = `<div class="card-cover"><canvas class="pdf-cover-canvas" data-pdf="${escHtml(proxyUrl)}"></canvas><div class="card-cover-placeholder">📄</div>${badgeHtml}</div>`;
+    var badge = isNew ? '<span class="badge-new">YENİ</span>' : '';
+    var magYear = mag.date ? mag.date.substring(0, 4) : (mag.year || '');
+    var issueStr = mag.issue ? 'Sayı ' + mag.issue : '';
+    var pal = PALETTES[idx % PALETTES.length];
 
-    const metaParts = [];
-    if (mag.issue) metaParts.push(`<span>Sayı ${mag.issue}</span>`);
-    if (mag.date) {
-      metaParts.push(`<span class="${metaParts.length ? 'dot' : ''}">${new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' })}</span>`);
-    } else if (mag.year) {
-      metaParts.push(`<span class="${metaParts.length ? 'dot' : ''}">${mag.year}</span>`);
+    // Kapak: coverUrl (harici resim) varsa onu göster, yoksa stilize kapak
+    var inner;
+    if (mag.coverUrl && !mag.coverUrl.includes('drive.google.com/thumbnail')) {
+      inner = '<img src="' + escHtml(mag.coverUrl) + '" alt="' + escHtml(mag.title) + '" loading="lazy">';
+    } else {
+      inner =
+        '<div class="cover-styled" style="background:' + pal.bg + '">' +
+          '<div class="cover-deco" style="border-color:' + pal.ac + '"></div>' +
+          '<div class="cover-body">' +
+            '<span class="cover-icon">📖</span>' +
+            '<span class="cover-title">' + escHtml(mag.title) + '</span>' +
+            (issueStr ? '<span class="cover-issue" style="border-color:' + pal.ac + '">' + escHtml(issueStr) + '</span>' : '') +
+            (magYear  ? '<span class="cover-year">' + escHtml(magYear) + '</span>' : '') +
+          '</div>' +
+          '<div class="cover-stripe" style="background:' + pal.ac + '"></div>' +
+        '</div>';
     }
 
-    card.innerHTML = `
-      ${coverHtml}
-      <div class="card-info">
-        <div class="card-title">${escHtml(mag.title)}</div>
-        ${mag.description ? `<div class="card-desc">${escHtml(mag.description)}</div>` : ''}
-        <div class="card-meta">${metaParts.join('')}</div>
-      </div>`;
+    var meta = [];
+    if (mag.issue) meta.push('<span>Sayı ' + mag.issue + '</span>');
+    if (mag.date) {
+      meta.push('<span class="' + (meta.length ? 'dot' : '') + '">' +
+        new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) + '</span>');
+    } else if (mag.year) {
+      meta.push('<span class="' + (meta.length ? 'dot' : '') + '">' + mag.year + '</span>');
+    }
+
+    card.innerHTML =
+      '<div class="card-cover">' + inner + badge + '</div>' +
+      '<div class="card-info">' +
+        '<div class="card-title">' + escHtml(mag.title) + '</div>' +
+        (mag.description ? '<div class="card-desc">' + escHtml(mag.description) + '</div>' : '') +
+        '<div class="card-meta">' + meta.join('') + '</div>' +
+      '</div>';
 
     grid.appendChild(card);
   });
-
-  initPdfCovers();
-}
-
-// ---- PDF Otomatik Kapak ----
-const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-function initPdfCovers() {
-  const canvases = document.querySelectorAll('canvas.pdf-cover-canvas:not([data-rendered])');
-  if (!canvases.length || typeof pdfjsLib === 'undefined') {
-    console.log('[Cover] Atlandı — canvas:', canvases.length, 'pdfjsLib:', typeof pdfjsLib);
-    return;
-  }
-  if (!pdfjsLib.GlobalWorkerOptions.workerSrc)
-    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
-
-  canvases.forEach(c => renderPdfFirstPage(c, c.dataset.pdf));
 }
 
-async function renderPdfFirstPage(canvas, url) {
-  if (!url || canvas.dataset.rendered) return;
-  canvas.dataset.rendered = '1';
-  var ph = canvas.parentElement.querySelector('.card-cover-placeholder');
-  try {
-    // PDF'i önce ArrayBuffer olarak indir, sonra PDF.js'e ver
-    console.log('[Cover] PDF indiriliyor:', url.substring(0, 60) + '...');
-    var resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    var data = await resp.arrayBuffer();
-    console.log('[Cover] PDF boyut:', data.byteLength, 'byte');
-    if (data.byteLength < 100) throw new Error('PDF çok küçük: ' + data.byteLength);
-
-    var pdf = await pdfjsLib.getDocument({ data: data }).promise;
-    var page = await pdf.getPage(1);
-    var vp0 = page.getViewport({ scale: 1 });
-    var scale = 400 / vp0.width;
-    var vp = page.getViewport({ scale: scale });
-    canvas.width = vp.width;
-    canvas.height = vp.height;
-    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-    console.log('[Cover] Render başarılı:', canvas.width + 'x' + canvas.height);
-    if (ph) ph.style.display = 'none';
-  } catch (e) {
-    console.warn('[Cover] PDF kapak render hatası:', e);
-    canvas.style.display = 'none';
-  }
-}
-
-
+// ---- Filtre ----
 function applyFilters() {
-  const year = document.getElementById('filterYear').value;
-  const filtered = allMagazines.filter(m => {
-    const magYear = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
-    return !year || magYear === year;
+  var year = document.getElementById('filterYear').value;
+  var filtered = allMagazines.filter(function (m) {
+    var my = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
+    return !year || my === year;
   });
   renderGallery(filtered);
 }
 
 document.getElementById('filterYear').addEventListener('change', applyFilters);
-document.getElementById('filterReset').addEventListener('click', () => {
+document.getElementById('filterReset').addEventListener('click', function () {
   document.getElementById('filterYear').value = '';
   renderGallery(allMagazines);
 });
 
 // ---- Yardımcı ----
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // Başlat
