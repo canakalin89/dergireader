@@ -27,16 +27,18 @@ function drCoverFallback(img) {
   try {
     var token = localStorage.getItem('dr_admin_token');
     var regLink = document.getElementById('registerLink');
+    var link = document.getElementById('adminLink');
     if (!token) return;
     var payload = JSON.parse(atob(token.split('.')[1]));
-    var allowed = ['editor', 'admin', 'owner'];
-    if (payload && allowed.indexOf(payload.role) !== -1) {
-      var link = document.getElementById('adminLink');
-      if (link) link.style.display = '';
-    }
+    if (!payload) return;
     // Herhangi bir geçerli token varsa (pending dahil) kayıt butonunu gizle
-    if (payload) {
-      if (regLink) regLink.style.display = 'none';
+    if (regLink) regLink.style.display = 'none';
+    // Onaylı kullanıcıya "Yönetim", onay bekleyen (pending) kullanıcıya
+    // "Hesabım" göster — böylece pending hesap da panele/çıkışa ulaşabilir
+    if (link) {
+      var allowed = ['editor', 'admin', 'owner'];
+      link.textContent = allowed.indexOf(payload.role) !== -1 ? 'Yönetim' : 'Hesabım';
+      link.style.display = '';
     }
   } catch (e) { /* geçersiz token, gösterme */ }
 })();
