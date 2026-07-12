@@ -1,5 +1,5 @@
 const { verifyRole, getTokenPayload } = require('../_lib/auth');
-const { getUsers, saveUsers } = require('../_lib/store');
+const { getUsers, saveUsers, parseBody } = require('../_lib/store');
 const { sendError } = require('../_lib/errors');
 
 module.exports = async function handler(req, res) {
@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
   if (users[userIdx].email === ownerEmail) return sendError(res, 'ERR_USR_OWNER_PROTECTED');
 
   if (req.method === 'PATCH') {
-    const { role } = req.body || {};
+    const { role } = await parseBody(req);
     if (!['owner', 'admin', 'editor', 'pending'].includes(role)) return sendError(res, 'ERR_VAL_INVALID_ROLE');
     users[userIdx].role = role;
     await saveUsers(users);

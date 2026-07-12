@@ -654,8 +654,10 @@ body {
   .btn { min-height: 44px; }
   .hdr-btn { min-height: 40px; padding: .4rem .9rem; }
 
-  /* Kullanıcı badge: kısalt */
-  .user-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Kullanıcı badge: isim ve rolü gizle, sadece avatar + çıkış kalsın */
+  .user-name { display: none; }
+  #roleChip  { display: none; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; }
 }
 
 @media (max-width: 400px) {
