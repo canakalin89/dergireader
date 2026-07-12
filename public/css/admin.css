@@ -630,8 +630,11 @@ body {
   .admin-body { padding: 1rem 1rem 3rem; }
 
   /* Header: sıkış */
-  .admin-header { padding: 0 1rem; }
+  .admin-header { padding: 0 .75rem; }
   .brand-name   { font-size: .8rem; }
+  .header-actions { gap: .4rem; }
+  .hdr-link { font-size: 0; padding: .3rem .55rem; }
+  .hdr-link::before { content: '🏠'; font-size: 1rem; }
 
   /* Login kart: daha az dolgu */
   .login-wrap  { padding: 1rem; }
@@ -662,9 +665,8 @@ body {
 
 @media (max-width: 400px) {
   /* Çok küçük: header sadelik */
-  .hdr-link { font-size: 0; padding: .3rem .55rem; }
-  .hdr-link::before { content: '🏠'; font-size: 1rem; }
   .brand-name { font-size: .75rem; }
+  .hdr-btn { padding: .35rem .6rem; }
 }
 
 /* ---- Google butonu ---- */
