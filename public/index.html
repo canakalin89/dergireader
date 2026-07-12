@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Okul Dergilerimiz</title>
-  <meta name="description" content="Okulumuzun dijital dergi arşivi" />
+  <title>E-Dergi Kütüphanesi — Aziz Sancar Anadolu Lisesi</title>
+  <meta name="description" content="Aziz Sancar Anadolu Lisesi dijital dergi arşivi" />
   <link rel="stylesheet" href="/css/main.css" />
-  <!-- iframe embed için X-Frame-Options vercel.json'da ayarlanıyor -->
 </head>
 <body>
 
   <!-- Header -->
   <header class="site-header">
-    <h1>
-      <span class="icon">📚</span>
-      Okul Dergilerimiz
-    </h1>
+    <div class="header-brand">
+      <img src="/img/logo.png" alt="Aziz Sancar Anadolu Lisesi Logosu" class="school-logo" />
+      <div class="brand-text">
+        <span class="brand-name">Aziz Sancar Anadolu Lisesi</span>
+        <span class="brand-sub">E-Dergi Kütüphanesi</span>
+      </div>
+    </div>
     <div class="header-actions">
       <button class="btn-icon" id="themeToggle" title="Karanlık/Aydınlık mod" aria-label="Temayı değiştir">🌙</button>
     </div>
@@ -25,7 +27,7 @@
   <div class="stats-bar" id="statsBar">
     <span>📖 <strong id="statCount">—</strong> dergi</span>
     <span>📅 <strong id="statYears">—</strong></span>
-    <span>📄 Sayfa sayısı yükleniyor…</span>
+    <span>🏫 Tekirdağ / Kapaklı</span>
   </div>
 
   <!-- Hata banner -->
@@ -55,7 +57,6 @@
   <!-- Galeri -->
   <main class="gallery-container" role="main">
     <div class="gallery-grid" id="galleryGrid">
-      <!-- Yükleme iskeletleri (JS kaldırır) -->
       <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
       <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
       <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
@@ -64,6 +65,12 @@
       <div class="skeleton-card"><div class="skeleton-cover"></div><div class="skeleton-text"></div><div class="skeleton-text short"></div></div>
     </div>
   </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <span>© Aziz Sancar Anadolu Lisesi</span>
+    <a href="https://azizsancaranadolu.meb.k12.tr" target="_blank" rel="noopener">Okul Web Sitesi →</a>
+  </footer>
 
   <script src="/js/gallery.js"></script>
 </body>
