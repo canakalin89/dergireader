@@ -112,6 +112,13 @@ async function incrementView(magazineId) {
 
 // ── Kullanıcı CRUD ──────────────────────────────────────────────────────────
 
+/** Verilen e-posta, yapılandırılmış (veya varsayılan) owner e-postasıyla eşleşiyor mu? */
+function isOwnerEmail(email) {
+  if (!email) return false;
+  const owner = (process.env.OWNER_EMAIL || 'canakalin59@gmail.com').trim().toLowerCase();
+  return email.trim().toLowerCase() === owner;
+}
+
 async function getUsers() {
   return withRetry(() => readBlobJson(USERS_KEY), 'getUsers').catch(() => []);
 }
@@ -123,7 +130,7 @@ async function saveUsers(users) {
 async function upsertUser({ id, email, name, picture, provider }) {
   const users = await getUsers();
   const idx = users.findIndex(u => u.id === id);
-  const isOwner = email === process.env.OWNER_EMAIL;
+  const isOwner = isOwnerEmail(email);
 
   if (idx >= 0) {
     if (isOwner) users[idx].role = 'owner';
@@ -147,7 +154,7 @@ module.exports = {
   parseBody,
   getMagazines, saveMagazines,
   uploadFile, deleteFile,
-  getUsers, saveUsers, upsertUser,
+  getUsers, saveUsers, upsertUser, isOwnerEmail,
   getViews, incrementView,
   getCategories, saveCategories,
 };

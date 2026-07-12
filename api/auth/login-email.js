@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getUsers, saveUsers } = require('../_lib/store');
+const { getUsers, saveUsers, parseBody, isOwnerEmail } = require('../_lib/store');
 const { sendError } = require('../_lib/errors');
 
 module.exports = async function handler(req, res) {
@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return sendError(res, 'ERR_METHOD_NOT_ALLOWED');
 
-  const { email, password } = req.body || {};
+  const { email, password } = await parseBody(req);
   if (!email)    return sendError(res, 'ERR_VAL_EMAIL_REQUIRED');
   if (!password) return sendError(res, 'ERR_VAL_PASSWORD_REQUIRED');
 
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
   if (!valid) return sendError(res, 'ERR_USR_WRONG_PASSWORD');
 
   user.lastLogin = new Date().toISOString();
-  if (user.email === (process.env.OWNER_EMAIL || '').toLowerCase()) user.role = 'owner';
+  if (isOwnerEmail(user.email)) user.role = 'owner';
   await saveUsers(users);
 
   const token = jwt.sign(

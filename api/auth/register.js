@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const { getUsers, saveUsers } = require('../_lib/store');
+const { getUsers, saveUsers, parseBody, isOwnerEmail } = require('../_lib/store');
 const { sendError } = require('../_lib/errors');
 
 module.exports = async function handler(req, res) {
@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return sendError(res, 'ERR_METHOD_NOT_ALLOWED');
 
-  const { name, email, password, _hp } = req.body || {};
+  const { name, email, password, _hp } = await parseBody(req);
 
   if (_hp) return sendError(res, 'ERR_VAL_BOT_DETECTED');
   if (!name)     return sendError(res, 'ERR_VAL_NAME_REQUIRED');
@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
   const users = await getUsers();
   if (users.find(u => u.email === email.toLowerCase())) return sendError(res, 'ERR_USR_EMAIL_TAKEN');
 
-  const isOwner = email.toLowerCase() === (process.env.OWNER_EMAIL || '').toLowerCase();
+  const isOwner = isOwnerEmail(email);
   const passwordHash = await bcrypt.hash(password, 12);
 
   const user = {

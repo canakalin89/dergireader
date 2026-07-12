@@ -6,12 +6,12 @@
 :root {
   --bg:         #f7f5f0;
   --bg-card:    #ffffff;
-  --bg-header:  #15120e;
+  --bg-header:  #0e1f5c;
   --text:       #1a1714;
   --text-muted: #8a8278;
   --border:     #e8e2d9;
-  --accent:     #c0540a;
-  --accent-h:   #973f07;
+  --accent:     #cc0022;
+  --accent-h:   #a3001b;
   --danger:     #b91c1c;
   --danger-bg:  #fef2f2;
   --success:    #15803d;
@@ -34,7 +34,7 @@ body {
 /* ---- Header ---- */
 .admin-header {
   background: var(--bg-header);
-  height: 58px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -42,13 +42,22 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: 3px solid var(--accent);
+  box-shadow: 0 3px 16px rgba(0,0,0,.35);
 }
 
 .header-brand {
   display: flex;
   align-items: center;
   gap: .65rem;
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.4));
 }
 
 .brand-mark {
@@ -62,10 +71,20 @@ body {
   border-radius: 6px;
 }
 
+.brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+
 .brand-name {
-  font-size: .9rem;
+  font-family: var(--font-head);
+  font-size: .88rem;
   font-weight: 600;
-  color: rgba(255,255,255,.85);
+  color: rgba(255,255,255,.9);
+}
+
+.brand-sub {
+  font-size: .66rem;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 .header-actions {
@@ -99,7 +118,7 @@ body {
 
 /* ---- Login ---- */
 .login-wrap {
-  min-height: calc(100vh - 58px);
+  min-height: calc(100vh - 64px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -180,10 +199,12 @@ body {
 }
 
 .login-logo-img {
-  width: 160px;
-  height: auto;
-  margin: 0 auto 1.25rem;
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  margin: 0 auto 1.1rem;
   display: block;
+  filter: drop-shadow(0 2px 8px rgba(14,31,92,.18));
 }
 
 .login-card h2 {
@@ -347,7 +368,7 @@ body {
 .src-btn--active {
   border-color: var(--accent);
   color: var(--accent);
-  background: #fdf5ee;
+  background: #fff0f2;
 }
 
 /* ---- URL Zone ---- */
@@ -383,7 +404,7 @@ body {
 }
 .drop-zone:hover, .drop-zone.dragover {
   border-color: var(--accent);
-  background: #fdf5ee;
+  background: #fff0f2;
 }
 .drop-zone input[type="file"] {
   position: absolute;
@@ -470,7 +491,7 @@ body {
   width: 44px;
   height: 58px;
   border-radius: 4px;
-  background: linear-gradient(145deg, #2a2520, #1a1510);
+  background: linear-gradient(145deg, #1a3a8a, #0e1f5c);
   flex-shrink: 0;
   display: flex;
   align-items: center;

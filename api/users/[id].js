@@ -1,5 +1,5 @@
 const { verifyRole, getTokenPayload } = require('../_lib/auth');
-const { getUsers, saveUsers, parseBody } = require('../_lib/store');
+const { getUsers, saveUsers, parseBody, isOwnerEmail } = require('../_lib/store');
 const { sendError } = require('../_lib/errors');
 
 module.exports = async function handler(req, res) {
@@ -17,8 +17,7 @@ module.exports = async function handler(req, res) {
 
   if (userIdx === -1) return sendError(res, 'ERR_USR_NOT_FOUND');
 
-  const ownerEmail = process.env.OWNER_EMAIL || 'canakalin59@gmail.com';
-  if (users[userIdx].email === ownerEmail) return sendError(res, 'ERR_USR_OWNER_PROTECTED');
+  if (isOwnerEmail(users[userIdx].email)) return sendError(res, 'ERR_USR_OWNER_PROTECTED');
 
   if (req.method === 'PATCH') {
     const { role } = await parseBody(req);
