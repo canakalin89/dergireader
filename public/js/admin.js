@@ -333,12 +333,34 @@ function renderCategories(cats) {
     const item = document.createElement('div');
     item.className = 'cat-item';
     item.innerHTML = `
-      <span class="cat-swatch" style="background:${esc(c.color || '#6366f1')}"></span>
+      <input type="color" class="cat-swatch cat-color-input" data-id="${esc(c.id)}" value="${esc(c.color || '#6366f1')}" title="Rengi değiştir" />
       <span class="cat-name">${esc(c.name)}</span>
       <button class="btn btn-outline btn-delete-cat" data-id="${esc(c.id)}" data-name="${esc(c.name)}" title="Sil" style="margin-left:auto">🗑</button>`;
     listEl.appendChild(item);
   });
 }
+
+document.getElementById('catList').addEventListener('change', async (e) => {
+  const input = e.target.closest('.cat-color-input');
+  if (!input) return;
+
+  const id = input.dataset.id;
+  const color = input.value;
+  try {
+    const res = await fetch('/api/categories?action=update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id, color }),
+    });
+    if (!res.ok) throw new Error(await parseApiError(res, 'Renk güncellenemedi'));
+    const cat = allCategories.find(c => c.id === id);
+    if (cat) cat.color = color;
+    showToast('Renk güncellendi', 'success');
+  } catch (err) {
+    showToast('Hata: ' + err.message, 'error');
+    loadCategories();
+  }
+});
 
 document.getElementById('catForm').addEventListener('submit', async (e) => {
   e.preventDefault();
