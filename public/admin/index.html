@@ -197,7 +197,10 @@
           <span class="panel-icon">👥</span>
           Kullanıcılar
         </div>
-        <span class="panel-badge" id="usersCount">—</span>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span class="panel-badge" id="usersCount">—</span>
+          <button class="btn-ghost btn-sm" id="btnRefreshUsers" type="button" title="Listeyi yenile">⟳ Yenile</button>
+        </div>
       </div>
       <div class="panel-body panel-body--list">
         <div class="users-list" id="usersList">
@@ -279,6 +282,6 @@
   <div class="toast" id="toast"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="/js/admin.js"></script>
+  <script src="/js/admin.js?v=2"></script>
 </body>
 </html>

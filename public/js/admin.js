@@ -639,6 +639,8 @@ function renderUsers(users) {
 }
 
 // ── Event Delegation — kullanıcı listesi ────────────────────────────────────
+document.getElementById('btnRefreshUsers').addEventListener('click', () => loadUsers());
+
 document.getElementById('usersList').addEventListener('click', (e) => {
   const deleteBtn = e.target.closest('.btn-delete-user');
   if (deleteBtn) {
