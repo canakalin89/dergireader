@@ -76,6 +76,23 @@ const PALETTES = [
 
 let viewsData = {};
 
+// Helper: dergi tarihini ve sayı değerini elde et (sunucu ile aynı mantık)
+function getMagDate(m) {
+  if (!m) return new Date(0);
+  if (m.date) return new Date(m.date);
+  if (m.publishedAt) return new Date(m.publishedAt);
+  if (m.year) return new Date(String(m.year) + '-01-01');
+  return new Date(0);
+}
+function getMagIssue(m) {
+  if (!m) return Number.NEGATIVE_INFINITY;
+  if (m.issue !== undefined && m.issue !== null && m.issue !== '') {
+    const n = parseInt(m.issue);
+    return isNaN(n) ? Number.NEGATIVE_INFINITY : n;
+  }
+  return Number.NEGATIVE_INFINITY;
+}
+
 // ---- Veri yükleme ----
 async function loadMagazines() {
   try {
@@ -93,9 +110,14 @@ async function loadMagazines() {
       allCategories = await catRes.json().catch(() => []);
     }
     if (allMagazines.length) {
-      const sorted = [...allMagazines].sort((a, b) =>
-        new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime()
-      );
+      const sorted = [...allMagazines].sort((a, b) => {
+        const d = getMagDate(b) - getMagDate(a);
+        if (d !== 0) return d;
+        const ib = getMagIssue(b);
+        const ia = getMagIssue(a);
+        if (ib !== ia) return ib - ia;
+        return 0;
+      });
       newestMagId = sorted[0].id;
     }
     renderStats(allMagazines);
