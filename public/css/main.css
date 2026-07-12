@@ -6,13 +6,13 @@
 :root {
   --bg:          #f7f5f0;
   --bg-card:     #ffffff;
-  --bg-header:   #15120e;
+  --bg-header:   #0e1f5c;
   --text:        #1a1714;
   --text-muted:  #8a8278;
   --border:      #e8e2d9;
-  --accent:      #c0540a;
-  --accent-dark: #973f07;
-  --accent-pale: #fdf0e6;
+  --accent:      #cc0022;
+  --accent-dark: #a3001b;
+  --accent-pale: #fff0f2;
   --shadow-sm:   0 2px 8px rgba(0,0,0,.07);
   --shadow-md:   0 8px 28px rgba(0,0,0,.13);
   --shadow-lg:   0 20px 60px rgba(0,0,0,.22);
@@ -25,14 +25,14 @@
 [data-theme="dark"] {
   --bg:          #100f0d;
   --bg-card:     #1c1a17;
-  --bg-header:   #0a0908;
+  --bg-header:   #07122e;
   --text:        #ede8e0;
   --text-muted:  #6b6358;
   --border:      #2a2720;
   --shadow-sm:   0 2px 8px rgba(0,0,0,.35);
   --shadow-md:   0 8px 28px rgba(0,0,0,.55);
   --shadow-lg:   0 20px 60px rgba(0,0,0,.7);
-  --accent-pale: #2a1806;
+  --accent-pale: #2a0008;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,7 +51,8 @@ body {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: 3px solid var(--accent);
+  box-shadow: 0 3px 16px rgba(0,0,0,.35);
 }
 
 .header-inner {
@@ -72,16 +73,12 @@ body {
   text-decoration: none;
 }
 
-.brand-mark {
-  width: 36px; height: 36px;
-  background: var(--accent);
-  color: #fff;
-  font-family: var(--font-head);
-  font-size: 1.3rem;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 6px;
+.brand-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
   flex-shrink: 0;
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.4));
 }
 
 .brand-text { display: flex; flex-direction: column; }
