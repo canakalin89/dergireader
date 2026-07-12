@@ -73,6 +73,35 @@ const progressFill   = document.getElementById('progressFill');
 const zoomOverlay    = document.getElementById('zoomOverlay');
 const zoomCanvas     = document.getElementById('zoomCanvas');
 
+// ── Auto-hide toolbar (mobil) ──
+const _toolbar   = document.getElementById('toolbar');
+const _mobileFab = document.getElementById('mobileFab');
+var   _tbTimer   = null;
+
+function _isMobile() { return window.innerWidth <= 768; }
+
+function showToolbar() {
+  _toolbar.classList.remove('toolbar-hidden');
+  if (_mobileFab) _mobileFab.classList.add('fab-hidden');
+  clearTimeout(_tbTimer);
+  if (_isMobile()) {
+    _tbTimer = setTimeout(function() {
+      _toolbar.classList.add('toolbar-hidden');
+      if (_mobileFab) _mobileFab.classList.remove('fab-hidden');
+    }, 3000);
+  }
+}
+
+function keepToolbarVisible() {
+  clearTimeout(_tbTimer);
+  _toolbar.classList.remove('toolbar-hidden');
+  if (_mobileFab) _mobileFab.classList.add('fab-hidden');
+}
+
+_toolbar.addEventListener('mouseenter', keepToolbarVisible);
+_toolbar.addEventListener('touchstart', function() { clearTimeout(_tbTimer); }, { passive: true });
+_toolbar.addEventListener('touchend',   function() { showToolbar(); },          { passive: true });
+
 // ── Drive helpers ──
 function getDriveFileId(url) {
   const m = url.match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]{20,})/);
@@ -100,7 +129,8 @@ async function init() {
     }
     magazineData = await res.json();
 
-    const title = magazineData.title + (magazineData.issue ? ' #' + magazineData.issue : '');
+    const rawTitle = magazineData.title || 'Dergimiz';
+    const title = rawTitle + (magazineData.issue ? ' #' + magazineData.issue : '');
     document.title = title + ' — DergiReader';
     toolbarTitle.textContent = title;
 
@@ -108,6 +138,10 @@ async function init() {
 
     btnDownload.href = magazineData.pdfUrl;
     btnDownload.download = (magazineData.title || 'dergi') + '.pdf';
+    if (_mobileFab) {
+      _mobileFab.href = magazineData.pdfUrl;
+      _mobileFab.download = (magazineData.title || 'dergi') + '.pdf';
+    }
 
     // Always load through PDF.js — proxy if Drive URL
     const loadUrl = isDriveUrl(magazineData.pdfUrl)
@@ -253,6 +287,7 @@ function initFlipBook() {
     updateNav();
     renderSpread(currentIndex);
     localStorage.setItem('dr_progress_' + magazineId, String(currentIndex + 1));
+    showToolbar();
   });
 
   currentIndex = startPg;
@@ -501,6 +536,7 @@ document.getElementById('navRight').addEventListener('click', function() {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     tracking = true;
+    showToolbar();
   }, { passive: true });
 
   scene.addEventListener('touchend', function(e) {
@@ -612,6 +648,7 @@ window.addEventListener('resize', function() {
     if (!pageFlip || !pdfDoc) return;
     var wasPortrait = isPortrait;
     isPortrait = window.innerWidth < 768;
+    if (!_isMobile()) keepToolbarVisible();
     if (wasPortrait !== isPortrait) {
       var currentPage = pageFlip.getCurrentPageIndex();
       pageFlip.destroy();
@@ -650,7 +687,10 @@ function setMsg(t) { loadingMsg.textContent = t; }
 function setLoadProgress(pct) {
   if (loadProgressFill) loadProgressFill.style.width = Math.min(pct, 100) + '%';
 }
-function hideLoading() { loadingOverlay.style.display = 'none'; }
+function hideLoading() {
+  loadingOverlay.style.display = 'none';
+  showToolbar();
+}
 function showError(msg) {
   loadingOverlay.style.display = 'none';
   readerError.style.display = 'flex';

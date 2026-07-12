@@ -84,6 +84,13 @@ function getMagDate(m) {
   if (m.year) return new Date(String(m.year) + '-01-01');
   return new Date(0);
 }
+function getMagYear(m) {
+  if (!m) return null;
+  if (m.date)        return m.date.substring(0, 4);
+  if (m.publishedAt) return m.publishedAt.substring(0, 4);
+  if (m.year)        return String(m.year);
+  return null;
+}
 function getMagIssue(m) {
   if (!m) return Number.NEGATIVE_INFINITY;
   if (m.issue !== undefined && m.issue !== null && m.issue !== '') {
@@ -133,9 +140,7 @@ async function loadMagazines() {
 // ---- İstatistikler ----
 function renderStats(magazines) {
   document.getElementById('statCount').textContent = magazines.length;
-  const years = [...new Set(magazines.map(m =>
-    m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
-  ).filter(Boolean))].sort();
+  const years = [...new Set(magazines.map(m => getMagYear(m)).filter(Boolean))].sort();
   if (years.length > 1) {
     document.getElementById('statYears').textContent = years[0] + '–' + years[years.length - 1];
   } else if (years.length === 1) {
@@ -143,9 +148,6 @@ function renderStats(magazines) {
   } else {
     document.getElementById('statYears').textContent = '—';
   }
-  var statsBar = document.getElementById('statsBar');
-  var spans = statsBar.querySelectorAll('span');
-  if (spans[2]) spans[2].textContent = '📖 ' + magazines.length + ' yayın arşivde';
 }
 
 // ---- Kategori filtresi ----
@@ -184,7 +186,7 @@ function renderCategoryFilter(cats) {
 function filteredMagazines() {
   var year = document.getElementById('filterYear').value;
   return allMagazines.filter(function (m) {
-    var my = m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null);
+    var my = getMagYear(m);
     var yearOk = !year || my === year;
     var catOk = !activeCategoryId || m.categoryId === activeCategoryId;
     return yearOk && catOk;
@@ -194,9 +196,7 @@ function filteredMagazines() {
 // ---- Yıl filtresi ----
 function populateYearFilter(magazines) {
   var sel = document.getElementById('filterYear');
-  var years = [...new Set(magazines.map(m =>
-    m.date ? m.date.substring(0, 4) : (m.year ? String(m.year) : null)
-  ).filter(Boolean))].sort((a, b) => b - a);
+  var years = [...new Set(magazines.map(m => getMagYear(m)).filter(Boolean))].sort((a, b) => b - a);
   years.forEach(y => {
     var opt = document.createElement('option');
     opt.value = y; opt.textContent = y;
@@ -220,10 +220,11 @@ function renderGallery(magazines) {
     var card = document.createElement('a');
     card.className = 'magazine-card';
     card.href = '/reader.html?id=' + encodeURIComponent(mag.id);
-    card.setAttribute('aria-label', mag.title + ' — Sayı ' + mag.issue);
+    var _issueLabel = mag.issue != null ? ' — Sayı ' + mag.issue : '';
+    card.setAttribute('aria-label', (mag.title || 'Dergi') + _issueLabel);
 
     var badge = isNew ? '<span class="badge-new">YENİ</span>' : '';
-    var magYear = mag.date ? mag.date.substring(0, 4) : (mag.year || '');
+    var magYear = getMagYear(mag) || '';
     var issueStr = mag.issue ? 'Sayı ' + mag.issue : '';
     var pal = PALETTES[idx % PALETTES.length];
 
@@ -251,9 +252,10 @@ function renderGallery(magazines) {
 
     var meta = [];
     if (mag.issue) meta.push('<span>Sayı ' + mag.issue + '</span>');
-    if (mag.date) {
+    var _displayDate = mag.date || (mag.publishedAt ? mag.publishedAt.substring(0, 10) : null);
+    if (_displayDate) {
       meta.push('<span class="' + (meta.length ? 'dot' : '') + '">' +
-        new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) + '</span>');
+        new Date(_displayDate).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) + '</span>');
     } else if (mag.year) {
       meta.push('<span class="' + (meta.length ? 'dot' : '') + '">' + mag.year + '</span>');
     }

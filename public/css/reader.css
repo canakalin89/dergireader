@@ -29,8 +29,8 @@ body {
   padding: 0 max(12px, env(safe-area-inset-left, 12px));
   padding-right: max(12px, env(safe-area-inset-right, 12px));
   height: 48px;
-  background: #0a0a12;
-  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: #080e24;
+  border-bottom: 2px solid rgba(204,0,34,.35);
   flex-shrink: 0;
   z-index: 100;
   transition: transform .3s ease, opacity .3s ease;
@@ -146,11 +146,11 @@ body {
   width: 30px;
   height: 50px;
   right: 0;
-  background: linear-gradient(135deg, #6060c0 0%, #4040a0 100%);
+  background: linear-gradient(135deg, #1a3a8a 0%, #0e1f5c 100%);
   border-radius: 0 4px 4px 0;
   transform-origin: left center;
   animation: bookFlip 1.8s ease-in-out infinite;
-  box-shadow: 0 0 10px rgba(80,80,180,.3);
+  box-shadow: 0 0 10px rgba(14,31,92,.45);
 }
 
 .book-loader .book-page:nth-child(1) { animation-delay: 0s; }
@@ -174,7 +174,7 @@ body {
 .load-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #6060c0, #8080e0);
+  background: linear-gradient(90deg, #a3001b, #cc0022);
   border-radius: 2px;
   transition: width .3s ease;
 }
@@ -275,9 +275,54 @@ body {
 /* Let PDF links/QR hits pass through nav zones on touch */
 .pdf-link-layer { z-index: 15; }
 .pdf-link-hit { z-index: 16; }
-.nav-zone-left { left: 0; }
+.nav-zone-left  { left: 0; }
 .nav-zone-right { right: 0; }
 .nav-zone:active { background: rgba(255,255,255,.03); }
+
+.nav-zone-left::after {
+  content: '‹';
+  position: absolute;
+  left: 6px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.12);
+  font-size: 22px;
+  pointer-events: none;
+  line-height: 1;
+}
+.nav-zone-right::after {
+  content: '›';
+  position: absolute;
+  right: 6px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.12);
+  font-size: 22px;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* ── Mobil İndirme FAB ── */
+.mobile-fab {
+  display: none;
+  position: fixed;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  right: 14px;
+  width: 52px;
+  height: 52px;
+  background: #cc0022;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 20px;
+  z-index: 90;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  text-decoration: none;
+  transition: transform .15s ease, background .15s, opacity .25s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.mobile-fab:active  { transform: scale(0.91); background: #a3001b; }
+.mobile-fab.fab-hidden { opacity: 0; pointer-events: none; }
 
 /* ── Page elements ── */
 .flip-page {
@@ -373,7 +418,7 @@ body {
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, #5050a0, #7070d0, #5050a0);
+  background: linear-gradient(90deg, #a3001b, #cc0022, #a3001b);
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
   transition: width .4s ease;
@@ -462,8 +507,9 @@ body {
   }
   .toolbar-title { max-width: 100px; font-size: 11px; }
   .toolbar-sep { display: none; }
-  .tb-btn { width: 38px; height: 38px; font-size: 16px; border: none; }
-  .btn-back { border: none; padding: 5px 8px; font-size: 11px; min-height: 38px; }
+  .tb-btn { width: 38px; height: 44px; font-size: 16px; border: none; }
+  .btn-back { border: none; padding: 5px 8px; font-size: 11px; min-height: 44px; }
+  .mobile-fab { display: flex; }
   .page-info { font-size: 10px; min-width: 40px; }
   #btnDownload { display: none; }
   .flipbook-scene { padding: 6px 2px; }
