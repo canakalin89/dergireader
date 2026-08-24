@@ -12,6 +12,7 @@ const ERRORS = {
   ERR_AUTH_EXPIRED:           { http: 401, message: 'Oturum süresi dolmuş. Lütfen tekrar giriş yapın.' },
   ERR_AUTH_INSUFFICIENT_ROLE: { http: 403, message: 'Bu işlem için yetkiniz yok.' },
   ERR_AUTH_OWNER_ONLY:        { http: 403, message: 'Bu işlemi yalnızca sistem sahibi yapabilir.' },
+  ERR_AUTH_JWT_SECRET_MISSING: { http: 500, message: 'Sunucu kimlik doğrulama ayarı eksik. JWT_SECRET tanımlanmalıdır.' },
 
   // ── Doğrulama (validation) ──────────────────────────────────────────────────
   ERR_VAL_INVALID_JSON:         { http: 400, message: 'İstek gövdesi JSON formatında olmalı.' },

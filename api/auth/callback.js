@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { upsertUser } = require('../_lib/store');
+const { requireJwtSecret } = require('../_lib/auth');
 
 module.exports = async function handler(req, res) {
   const { code, error } = req.query;
@@ -9,9 +10,15 @@ module.exports = async function handler(req, res) {
   }
 
   const redirectUri = process.env.GOOGLE_REDIRECT_URI;
-  const secret = process.env.JWT_SECRET;
+  let secret;
 
-  if (!redirectUri || !secret) {
+  try {
+    secret = requireJwtSecret();
+  } catch {
+    return res.redirect(302, '/admin/?auth_error=1');
+  }
+
+  if (!redirectUri) {
     return res.redirect(302, '/admin/?auth_error=1');
   }
 

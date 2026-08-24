@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { getUsers, saveUsers, parseBody, isOwnerEmail } = require('../_lib/store');
 const { sendError } = require('../_lib/errors');
+const { requireJwtSecret } = require('../_lib/auth');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,9 +42,16 @@ module.exports = async function handler(req, res) {
   users.push(user);
   await saveUsers(users);
 
+  let secret;
+  try {
+    secret = requireJwtSecret();
+  } catch (err) {
+    return sendError(res, 'ERR_AUTH_JWT_SECRET_MISSING', err.message);
+  }
+
   const token = jwt.sign(
     { id: user.id, email: user.email, name: user.name, role: user.role, picture: null },
-    process.env.JWT_SECRET,
+    secret,
     { expiresIn: '8h' }
   );
 
