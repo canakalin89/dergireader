@@ -33,6 +33,8 @@ async function withRetry(fn, label) {
 
 // ── Blob JSON okuma/yazma ───────────────────────────────────────────────────
 
+// Okuma hataları çağırana ulaşmalı; boş veriyle mevcut kayıtların üzerine yazılmamalı.
+
 async function readBlobJson(key) {
   const { blobs } = await list({ prefix: key });
   if (!blobs.length) return [];
@@ -56,13 +58,15 @@ async function writeBlobJson(key, data) {
     access: 'public',
     contentType: 'application/json',
     addRandomSuffix: false,
+    // SDK v2, sabit JSON dosyalarını güncellemek için açık izin ister.
+    allowOverwrite: true,
   });
 }
 
 // ── Dergi CRUD ──────────────────────────────────────────────────────────────
 
 async function getMagazines() {
-  return withRetry(() => readBlobJson(METADATA_KEY), 'getMagazines').catch(() => []);
+  return withRetry(() => readBlobJson(METADATA_KEY), 'getMagazines');
 }
 
 async function saveMagazines(magazines) {
@@ -90,7 +94,7 @@ async function deleteFile(url) {
 // ── Kategori CRUD ───────────────────────────────────────────────────────────
 
 async function getCategories() {
-  return withRetry(() => readBlobJson(CATEGORIES_KEY), 'getCategories').catch(() => []);
+  return withRetry(() => readBlobJson(CATEGORIES_KEY), 'getCategories');
 }
 
 async function saveCategories(categories) {
@@ -100,7 +104,7 @@ async function saveCategories(categories) {
 // ── Görüntüleme sayaçları ───────────────────────────────────────────────────
 
 async function getViews() {
-  return withRetry(() => readBlobJsonObj(VIEWS_KEY), 'getViews').catch(() => ({}));
+  return withRetry(() => readBlobJsonObj(VIEWS_KEY), 'getViews');
 }
 
 async function incrementView(magazineId) {
@@ -120,7 +124,7 @@ function isOwnerEmail(email) {
 }
 
 async function getUsers() {
-  return withRetry(() => readBlobJson(USERS_KEY), 'getUsers').catch(() => []);
+  return withRetry(() => readBlobJson(USERS_KEY), 'getUsers');
 }
 
 async function saveUsers(users) {

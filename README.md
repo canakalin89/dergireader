@@ -50,6 +50,20 @@ npm run dev
 
 Bu komut `vercel dev` çalıştırır ve hem statik dosyaları hem de `/api` fonksiyonlarını yerelde ayağa kaldırır.
 
+### Test
+
+```bash
+npm test
+```
+
+Node.js testleri gerçek Google veya Blob bağlantısı kurmadan mevcut hesaplarla
+Google girişini, JSON güncellemelerini ve okuma hatasında veri korumasını denetler.
+Blob SDK v2 için sabit JSON kayıtlarında `allowOverwrite: true` gereklidir.
+Depo okuma hataları boş listeye dönüştürülmez; mevcut kayıtlar korunur.
+Google başlangıç ve dönüş adımları aynı `GOOGLE_REDIRECT_URI` değerini kullanır;
+bu değer Google Cloud'da kayıtlı adresle birebir eşleşmelidir. Sunucunun dahili
+`localhost` adresinden otomatik dönüş adresi üretilmez.
+
 ### Dağıtım (Deploy)
 
 Depo, `main` dalına yapılan her push'ta Vercel tarafından otomatik olarak dağıtılır.

@@ -4,6 +4,7 @@
   "description": "Okul PDF dergi galerisi ve okuyucusu",
   "main": "api/index.js",
   "scripts": {
+    "test": "node --test tests/*.test.js",
     "dev": "npx --yes vercel@59.5.0 dev",
     "hash-password": "node -e \"const b=require('bcryptjs');b.hash(process.argv[1],10).then(h=>console.log(h))\" "
   },
