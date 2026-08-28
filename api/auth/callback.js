@@ -13,6 +13,18 @@ function parseCookies(header) {
   return cookies;
 }
 
+function resolveRedirectUri(req) {
+  const env = process.env.GOOGLE_REDIRECT_URI;
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000').toString();
+  const proto = (req.headers['x-forwarded-proto'] || (req.connection && req.connection.encrypted ? 'https' : 'http')).toString();
+  const dynamicUri = `${proto}://${host}/api/auth/callback`;
+
+  if (env && env.includes(host)) return env;
+  if (host.includes('localhost')) return dynamicUri;
+  if (env && env.includes('vercel.app')) return dynamicUri;
+  return env || dynamicUri;
+}
+
 module.exports = async function handler(req, res) {
   const { code, error, state } = req.query;
   const cookies = parseCookies(req.headers.cookie || '');
@@ -26,7 +38,7 @@ module.exports = async function handler(req, res) {
     return res.redirect(302, '/admin/?auth_error=1');
   }
 
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const redirectUri = resolveRedirectUri(req);
   let secret;
 
   try {

@@ -1,5 +1,17 @@
 const crypto = require('crypto');
 
+function resolveRedirectUri(req) {
+  const env = process.env.GOOGLE_REDIRECT_URI;
+  const host = (req.headers['x-forwarded-host'] || req.headers.host || 'localhost:3000').toString();
+  const proto = (req.headers['x-forwarded-proto'] || (req.connection && req.connection.encrypted ? 'https' : 'http')).toString();
+  const dynamicUri = `${proto}://${host}/api/auth/callback`;
+
+  if (env && env.includes(host)) return env;
+  if (host.includes('localhost')) return dynamicUri;
+  if (env && env.includes('vercel.app')) return dynamicUri;
+  return env || dynamicUri;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -8,7 +20,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'Google OAuth yapılandırılmamış' });
   }
 
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI;
+  const redirectUri = resolveRedirectUri(req);
   if (!redirectUri) {
     return res.status(500).json({ error: 'GOOGLE_REDIRECT_URI tanımlanmamış' });
   }
