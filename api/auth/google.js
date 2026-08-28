@@ -14,6 +14,21 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: 'GOOGLE_REDIRECT_URI tanımlanmamış' });
   }
 
+  let callbackUrl;
+  try {
+    callbackUrl = new URL(redirectUri);
+    if (!['https:', 'http:'].includes(callbackUrl.protocol)) throw new Error('Geçersiz protokol');
+  } catch {
+    return res.status(500).json({ error: 'GOOGLE_REDIRECT_URI geçerli bir HTTP adresi olmalı' });
+  }
+
+  // State çerezi ve dönüş isteği aynı alanda olmalı; alternatif alanı önce taşı.
+  const requestHost = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0].trim().toLowerCase();
+  if (requestHost !== callbackUrl.host.toLowerCase()) {
+    return res.redirect(302, new URL('/api/auth/google', callbackUrl).toString());
+  }
+
   const state = crypto.randomBytes(16).toString('hex');
   const isSecure = req.headers['x-forwarded-proto'] === 'https' || !String(req.headers.host || '').includes('localhost');
   const cookie = [

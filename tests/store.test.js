@@ -22,6 +22,7 @@ function loadModule(file, dependencies, globals = {}) {
     } },
     setTimeout: callback => { callback(); },
     URLSearchParams,
+    URL,
     ...globals,
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context, { filename: file });
@@ -164,7 +165,7 @@ test('PDF ve kapak yüklemeleri ayrı dosya oluşturmaya devam eder', async () =
   assert.notEqual(writes[0].options.allowOverwrite, true);
 });
 
-test('Google başlangıcı dahili localhost yerine yapılandırılmış dönüş adresini kullanır', async () => {
+test('Google başlangıcı önce kayıtlı alana geçer ve state çerezini o alanda oluşturur', async () => {
   const handler = loadModule('api/auth/google.js', { crypto: require('node:crypto') });
   const res = {
     headers: {},
@@ -172,6 +173,9 @@ test('Google başlangıcı dahili localhost yerine yapılandırılmış dönüş
     redirect(status, url) { this.status = status; this.url = url; },
   };
   await handler({ method: 'GET', headers: { host: 'localhost:3000', 'x-forwarded-proto': 'https' } }, res);
+  assert.equal(res.url, 'https://site.example.test/api/auth/google');
+  assert.equal(res.headers['Set-Cookie'], undefined);
+  await handler({ method: 'GET', headers: { host: 'localhost:3000', 'x-forwarded-host': 'site.example.test', 'x-forwarded-proto': 'https' } }, res);
   const params = new URL(res.url).searchParams;
   assert.equal(params.get('redirect_uri'), 'https://site.example.test/api/auth/callback');
   assert.ok(params.get('state'));
@@ -191,6 +195,22 @@ test('Google dönüş adresi yoksa localhost adresi uydurulmaz', async () => {
   };
   await handler({ method: 'GET', headers: { host: 'localhost:3000' } }, res);
   assert.equal(res.code, 500);
+});
+
+test('Geçersiz Google dönüş adresiyle yönlendirme yapılmaz', async () => {
+  for (const redirectUri of ['geçersiz-adres', 'javascript:alert(1)']) {
+    const handler = loadModule('api/auth/google.js', { crypto: require('node:crypto') }, {
+      process: { env: { GOOGLE_CLIENT_ID: 'test-client-id', GOOGLE_REDIRECT_URI: redirectUri } },
+    });
+    const res = {
+      status(code) { this.code = code; return this; },
+      json(body) { this.body = body; },
+      setHeader() { assert.fail('Geçersiz ayarda çerez oluşturulmamalı'); },
+      redirect() { assert.fail('Geçersiz ayarda yönlendirme yapılmamalı'); },
+    };
+    await handler({ method: 'GET', headers: { host: 'site.example.test' } }, res);
+    assert.equal(res.code, 500);
+  }
 });
 
 test('Google state kontrolü korunur; eşleşmeyen istekte hesaplara dokunulmaz', async () => {
