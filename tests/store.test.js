@@ -165,22 +165,24 @@ test('PDF ve kapak yüklemeleri ayrı dosya oluşturmaya devam eder', async () =
   assert.notEqual(writes[0].options.allowOverwrite, true);
 });
 
-test('Google başlangıcı önce kayıtlı alana geçer ve state çerezini o alanda oluşturur', async () => {
+test('Google başlangıcı alanlar arasında döngü kurmadan kayıtlı dönüş adresini kullanır', async () => {
   const handler = loadModule('api/auth/google.js', { crypto: require('node:crypto') });
   const res = {
     headers: {},
     setHeader(name, value) { this.headers[name] = value; },
     redirect(status, url) { this.status = status; this.url = url; },
   };
-  await handler({ method: 'GET', headers: { host: 'localhost:3000', 'x-forwarded-proto': 'https' } }, res);
-  assert.equal(res.url, 'https://site.example.test/api/auth/google');
-  assert.equal(res.headers['Set-Cookie'], undefined);
-  await handler({ method: 'GET', headers: { host: 'localhost:3000', 'x-forwarded-host': 'site.example.test', 'x-forwarded-proto': 'https' } }, res);
-  const params = new URL(res.url).searchParams;
-  assert.equal(params.get('redirect_uri'), 'https://site.example.test/api/auth/callback');
-  assert.ok(params.get('state'));
-  assert.ok(res.headers['Set-Cookie'].includes(`google_oauth_state=${params.get('state')};`));
-  assert.ok(res.headers['Set-Cookie'].includes('HttpOnly'));
+  for (const host of ['localhost:3000', 'alias.example.test', 'site.example.test']) {
+    await handler({ method: 'GET', headers: { host, 'x-forwarded-proto': 'https' } }, res);
+    const url = new URL(res.url);
+    assert.equal(url.origin, 'https://accounts.google.com');
+    const params = url.searchParams;
+    assert.equal(params.get('redirect_uri'), 'https://site.example.test/api/auth/callback');
+    assert.ok(params.get('state'));
+    assert.ok(res.headers['Set-Cookie'].includes(`google_oauth_state=${params.get('state')};`));
+    assert.ok(res.headers['Set-Cookie'].includes('HttpOnly'));
+    assert.ok(res.headers['Set-Cookie'].includes('Secure'));
+  }
 });
 
 test('Google dönüş adresi yoksa localhost adresi uydurulmaz', async () => {

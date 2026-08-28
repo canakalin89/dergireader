@@ -63,8 +63,9 @@ Depo okuma hataları boş listeye dönüştürülmez; mevcut kayıtlar korunur.
 Google başlangıç ve dönüş adımları aynı `GOOGLE_REDIRECT_URI` değerini kullanır;
 bu değer Google Cloud'da kayıtlı adresle birebir eşleşmelidir. Sunucunun dahili
 `localhost` adresinden otomatik dönüş adresi üretilmez.
-Giriş başka bir alan adından başlatılırsa önce kayıtlı dönüş adresinin alanına
-geçilir; böylece güvenlik çerezi ve Google dönüşü aynı alanda kalır.
+Google dönüş adresinin alanı Vercel'de başka bir alana yönlendiriliyorsa giriş
+bu son alandan başlatılmalıdır; böylece güvenlik çerezi dönüşte de gönderilir.
+OAuth başlangıcı ters yönde ek bir alan geçişi yapmaz; yönlendirme döngüsü oluşmaz.
 
 ### Dağıtım (Deploy)
 
