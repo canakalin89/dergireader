@@ -61,8 +61,22 @@ function saveToken(t) { authToken = t; localStorage.setItem(TOKEN_KEY, t); }
 function clearToken() { authToken = null; currentUser = null; localStorage.removeItem(TOKEN_KEY); }
 function authHeaders() { return { 'Authorization': `Bearer ${authToken}` }; }
 
+function decodeJwtPayloadSegment(segment) {
+  const normalized = segment.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  return new TextDecoder().decode(Uint8Array.from(binary, ch => ch.charCodeAt(0)));
+}
+
 function parseJWT(token) {
-  try { return JSON.parse(atob(token.split('.')[1])); } catch { return null; }
+  if (!token || !token.includes('.')) return null;
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    return JSON.parse(decodeJwtPayloadSegment(payload));
+  } catch {
+    return null;
+  }
 }
 
 function hasRole(minRole) {

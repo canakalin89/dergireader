@@ -2,10 +2,27 @@ const jwt = require('jsonwebtoken');
 const { upsertUser } = require('../_lib/store');
 const { requireJwtSecret } = require('../_lib/auth');
 
+function parseCookies(header) {
+  const cookies = {};
+  if (!header) return cookies;
+  for (const part of header.split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (!key) continue;
+    cookies[key] = decodeURIComponent(rest.join('='));
+  }
+  return cookies;
+}
+
 module.exports = async function handler(req, res) {
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
+  const cookies = parseCookies(req.headers.cookie || '');
 
   if (error || !code) {
+    return res.redirect(302, '/admin/?auth_error=1');
+  }
+
+  if (!state || cookies.google_oauth_state !== state) {
+    console.error('Google OAuth state mismatch');
     return res.redirect(302, '/admin/?auth_error=1');
   }
 
@@ -37,15 +54,16 @@ module.exports = async function handler(req, res) {
     });
 
     const tokenData = await tokenRes.json();
-    if (!tokenData.access_token) throw new Error('Access token alınamadı');
+    if (!tokenRes.ok || !tokenData.access_token) {
+      throw new Error(tokenData.error_description || 'Access token alınamadı');
+    }
 
-    // Kullanıcı bilgilerini çek
     const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const googleUser = await userRes.json();
 
-    if (!googleUser.email) throw new Error('E-posta bilgisi alınamadı');
+    if (!userRes.ok || !googleUser.email) throw new Error('E-posta bilgisi alınamadı');
 
     // Kullanıcıyı kaydet / güncelle
     const user = await upsertUser({
