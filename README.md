@@ -9,6 +9,7 @@ Okulun basılı dergilerini dijital ortamda sergilemek için geliştirilmiş, ok
 - **Galeri** — Dergi kapaklarının listelendiği, yıl/kategoriye göre filtrelenebilen ana sayfa
 - **Okuyucu** — Sayfa çevirme animasyonlu (flipbook), mobil uyumlu PDF görüntüleyici
 - **Yönetim paneli** — Şifre korumalı; dergi ekleme/düzenleme/silme, kullanıcı ve kategori yönetimi
+- **Dergi ekleme** — Sunucu kaydı onaylayınca yeni kart doğrudan eklenir; liste tekrar indirilmez, mevcut kapaklar korunur.
 - **Rol sistemi** — `owner` → `admin` → `editor` → `pending` (onay bekleyen)
 - **Google ile giriş** ve e-posta/şifre ile giriş desteği
 - Okul kimliğine uygun lacivert + kırmızı tasarım, mobil öncelikli arayüz
@@ -58,6 +59,8 @@ npm test
 
 Node.js testleri gerçek Google veya Blob bağlantısı kurmadan mevcut hesaplarla
 Google girişini, JSON güncellemelerini ve okuma hatasında veri korumasını denetler.
+Panel testleri dergi eklemenin tek POST ile tamamlanmasını, tarih sırasını,
+mevcut kartların korunmasını, hata durumlarını ve geç gelen liste yanıtlarını denetler.
 Blob SDK v2 için sabit JSON kayıtlarında `allowOverwrite: true` gereklidir.
 Depo okuma hataları boş listeye dönüştürülmez; mevcut kayıtlar korunur.
 Google başlangıç ve dönüş adımları aynı `GOOGLE_REDIRECT_URI` değerini kullanır;

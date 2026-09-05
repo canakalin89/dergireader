@@ -16,8 +16,8 @@ async function parseApiError(res, fallback) {
 }
 
 // ── PDF kapak oluşturucu ────────────────────────────────────────────────────
-function initPdfCovers() {
-  const canvases = document.querySelectorAll('canvas.pdf-cover-canvas:not([data-rendered])');
+function initPdfCovers(root = document) {
+  const canvases = root.querySelectorAll('canvas.pdf-cover-canvas:not([data-rendered])');
   if (!canvases.length || typeof pdfjsLib === 'undefined') return;
   if (!pdfjsLib.GlobalWorkerOptions.workerSrc)
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -55,6 +55,8 @@ let currentUser = null;
 
 // Tüm dergileri bellekte tut — renderList ve modal işlemleri için
 let allMagazines = [];
+// İlk liste isteği sürerken kaydedilen dergileri geç gelen yanıtta koru.
+const pendingMagazineLoads = new Set();
 
 function isLoggedIn() { return !!authToken; }
 function saveToken(t) { authToken = t; localStorage.setItem(TOKEN_KEY, t); }
@@ -230,6 +232,8 @@ document.getElementById('emailAuthForm').addEventListener('submit', async (e) =>
 
 // ── Dergi listesini yükle ───────────────────────────────────────────────────
 async function loadMagazines() {
+  const savedDuringLoad = new Map();
+  pendingMagazineLoads.add(savedDuringLoad);
   const listEl = document.getElementById('magazineList');
   const countEl = document.getElementById('listCount');
   listEl.innerHTML = '<div class="empty-list">Yükleniyor…</div>';
@@ -237,12 +241,19 @@ async function loadMagazines() {
   try {
     const res = await fetch('/api/magazines');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    allMagazines = await res.json();
+    const magazines = await res.json();
+    const merged = new Map(magazines.map(mag => [mag.id, mag]));
+    savedDuringLoad.forEach((mag, id) => merged.set(id, mag));
+    allMagazines = [...merged.values()].sort(compareMagazines);
     countEl.textContent = `${allMagazines.length} dergi`;
     renderList(allMagazines);
   } catch (err) {
-    listEl.innerHTML = '<div class="empty-list">Dergiler yüklenemedi. Sayfayı yenileyin.</div>';
+    if (!savedDuringLoad.size) {
+      listEl.innerHTML = '<div class="empty-list">Dergiler yüklenemedi. Sayfayı yenileyin.</div>';
+    }
     console.error('[loadMagazines]', err);
+  } finally {
+    pendingMagazineLoads.delete(savedDuringLoad);
   }
 }
 
@@ -254,35 +265,59 @@ function renderList(magazines) {
     return;
   }
 
-  const canDelete = hasRole('admin');
-  const canEdit = hasRole('editor');
-
   listEl.innerHTML = '';
   magazines.forEach(mag => {
-    const item = document.createElement('div');
-    item.className = 'mag-item';
-    item.dataset.id = mag.id;
-    item.innerHTML = `
-      <div class="mag-thumb">
-        ${mag.coverUrl
-          ? `<img src="${esc(mag.coverUrl)}" alt="${esc(mag.title)}" loading="lazy" />`
-          : `<canvas class="pdf-cover-canvas" data-pdf="${esc(mag.pdfUrl || '')}"></canvas>`}
-      </div>
-      <div class="mag-details">
-        <h3>${esc(mag.title)}</h3>
-        <div class="mag-meta">
-          ${mag.issue ? `Sayı ${mag.issue} · ` : ''}${mag.date ? new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) : (mag.year || '')}
-          ${mag.description ? `<span class="mag-desc">${esc(mag.description)}</span>` : ''}
-        </div>
-      </div>
-      <div class="mag-actions">
-        <a href="/reader.html?id=${esc(mag.id)}" target="_blank" class="btn btn-outline" title="Önizle">👁</a>
-        ${canEdit ? `<button class="btn btn-outline btn-edit-mag" data-id="${esc(mag.id)}" title="Düzenle">✏️</button>` : ''}
-        ${canDelete ? `<button class="btn btn-outline btn-delete-mag" data-id="${esc(mag.id)}" data-title="${esc(mag.title)}" title="Sil">🗑</button>` : ''}
-      </div>`;
-    listEl.appendChild(item);
+    listEl.appendChild(createMagazineItem(mag));
   });
   initPdfCovers();
+}
+
+function compareMagazines(a, b) {
+  return new Date(b.publishedAt) - new Date(a.publishedAt);
+}
+
+// Yalnızca sunucunun kaydettiğini doğruladığı dergiyi ekle; mevcut kapakları koru.
+function addSavedMagazine(magazine) {
+  pendingMagazineLoads.forEach(saved => saved.set(magazine.id, magazine));
+  allMagazines = allMagazines.filter(mag => mag.id !== magazine.id);
+  allMagazines.push(magazine);
+  allMagazines.sort(compareMagazines);
+
+  const listEl = document.getElementById('magazineList');
+  if (!listEl.querySelector('.mag-item')) listEl.innerHTML = '';
+  Array.from(listEl.children).find(item => item.dataset.id === magazine.id)?.remove();
+  const index = allMagazines.findIndex(mag => mag.id === magazine.id);
+  const item = createMagazineItem(magazine);
+  listEl.insertBefore(item, listEl.children[index] || null);
+  document.getElementById('listCount').textContent = `${allMagazines.length} dergi`;
+  initPdfCovers(item);
+}
+
+function createMagazineItem(mag) {
+  const canDelete = hasRole('admin');
+  const canEdit = hasRole('editor');
+  const item = document.createElement('div');
+  item.className = 'mag-item';
+  item.dataset.id = mag.id;
+  item.innerHTML = `
+    <div class="mag-thumb">
+      ${mag.coverUrl
+        ? `<img src="${esc(mag.coverUrl)}" alt="${esc(mag.title)}" loading="lazy" />`
+        : `<canvas class="pdf-cover-canvas" data-pdf="${esc(mag.pdfUrl || '')}"></canvas>`}
+    </div>
+    <div class="mag-details">
+      <h3>${esc(mag.title)}</h3>
+      <div class="mag-meta">
+        ${mag.issue ? `Sayı ${mag.issue} · ` : ''}${mag.date ? new Date(mag.date).toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' }) : (mag.year || '')}
+        ${mag.description ? `<span class="mag-desc">${esc(mag.description)}</span>` : ''}
+      </div>
+    </div>
+    <div class="mag-actions">
+      <a href="/reader.html?id=${esc(mag.id)}" target="_blank" class="btn btn-outline" title="Önizle">👁</a>
+      ${canEdit ? `<button class="btn btn-outline btn-edit-mag" data-id="${esc(mag.id)}" title="Düzenle">✏️</button>` : ''}
+      ${canDelete ? `<button class="btn btn-outline btn-delete-mag" data-id="${esc(mag.id)}" data-title="${esc(mag.title)}" title="Sil">🗑</button>` : ''}
+    </div>`;
+  return item;
 }
 
 // ── Event Delegation — dergi listesi tıklamaları ────────────────────────────
@@ -407,6 +442,7 @@ document.getElementById('catList').addEventListener('click', async (e) => {
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('submitBtn');
+  if (btn.disabled) return;
   const title = document.getElementById('inTitle').value.trim();
   const pdfUrl = document.getElementById('inPdfUrl').value.trim();
 
@@ -437,9 +473,10 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     if (res.status === 401 || res.status === 403) { handleUnauthorized(); return; }
     if (!res.ok) throw new Error(await parseApiError(res, `Kayıt hatası (${res.status})`));
 
+    const magazine = await res.json();
+    addSavedMagazine(magazine);
     showToast('Dergi başarıyla eklendi!', 'success');
     e.target.reset();
-    await loadMagazines();
   } catch (err) {
     showToast('Hata: ' + err.message, 'error');
   } finally {
